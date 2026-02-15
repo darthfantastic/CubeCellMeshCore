@@ -25,6 +25,7 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `identity` | Node name, hash, location, public key |
 | `location` | Show current GPS coordinates (read-only) |
 | `nodes` | Discovered nodes (hash, name, RSSI, SNR, packet count, last seen) |
+| `nodes <page>` | Paginated node list (3 per page: `nodes 0`, `nodes 1`, ...) **MeshCore** |
 | `contacts` | Known contacts with public keys (serial only) |
 | `neighbours` / `neighbors` | Direct repeater neighbours (0-hop ADVERTs) |
 | `health` | System dashboard: uptime, battery, network, mailbox, alerts, problem nodes |
@@ -304,7 +305,7 @@ All shared commands are available remotely via the MeshCore app's encrypted CLI 
 ```
 status  stats  stats-core  stats-radio  stats-packets
 ver  board  clock  time  lifetime  radiostats  packetstats
-telemetry  identity  location  nodes  neighbours  health  mailbox
+telemetry  identity  location  nodes  nodes <page>  neighbours  health  mailbox
 power  powersaving  radio  rssi  acl  quiet  cb  log
 get name  get lat  get lon  get tx  get radio  get freq
 get repeat  get flood.max  get advert.interval  get guest.password
