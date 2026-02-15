@@ -1,80 +1,162 @@
-# CubeCellMeshCore v0.5.0 - Command Reference
+# CubeCellMeshCore v0.5.1 - Command Reference
 
-Serial console at 115200 baud.
+Serial console at 115200 baud. Type `help` for command list.
+
+Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliases are kept for backwards compatibility.
 
 ## Status & Info
 
 | Command | Description |
 |---------|-------------|
 | `help` | Show available commands |
-| `status` | Firmware, frequency, time sync, RSSI/SNR |
-| `stats` | Session counters: RX/TX/FWD/ERR, ADV, queue |
-| `lifetime` | Persistent stats: boots, totals, logins |
+| `status` | Firmware version, node name/hash, uptime, time sync |
+| `stats` | Session counters: RX/TX/FWD/ERR, ADV TX/RX, queue length |
+| `ver` | Show firmware version **MeshCore** |
+| `clock` | Show current time (alias of `time`) **MeshCore** |
+| `time` | Show current time and sync status |
+| `lifetime` | Persistent stats: boot count, total uptime, RX/TX/FWD |
 | `radiostats` | Noise floor, last RSSI/SNR, airtime TX/RX |
 | `packetstats` | Packet breakdown: flood/direct RX/TX |
-| `telemetry` | Battery mV/%, temperature, uptime |
-| `identity` | Node name, hash, public key |
-| `nodes` | Discovered nodes (hash, name, RSSI, last seen date/time) |
-| `contacts` | Known contacts with public keys |
-| `neighbours` | Direct repeater neighbours (0-hop) |
-| `health` | System dashboard: uptime, battery, network, mailbox, alerts |
-| `mailbox` | Store-and-forward mailbox status (slots, E/R, age) |
+| `telemetry` | Battery mV/%, uptime |
+| `identity` | Node name, hash, location, public key |
+| `location` | Show current GPS coordinates (read-only) |
+| `nodes` | Discovered nodes (hash, name, RSSI, SNR, packet count, last seen) |
+| `contacts` | Known contacts with public keys (serial only) |
+| `neighbours` / `neighbors` | Direct repeater neighbours (0-hop ADVERTs) |
+| `health` | System dashboard: uptime, battery, network, mailbox, alerts, problem nodes |
+| `mailbox` | Store-and-forward mailbox status (slots, EEPROM/RAM, age) |
+| `power` | Show power mode, RX boost, deep sleep status |
+| `powersaving` | Show current power save mode (0/1/2) **MeshCore** |
+| `radio` | Show current radio parameters (+ temp radio if active) |
+| `rssi` | Show last RSSI and SNR |
+| `acl` | Show admin/guest passwords and active session count |
+| `set repeat` | Show repeat status and max hops **MeshCore** |
+| `set advert.interval` | Show ADVERT interval (minutes) and next scheduled **MeshCore** |
+| `set tx` | Show current TX power, max, auto status **MeshCore** |
+| `set name` | Show current node name **MeshCore** |
 
-## Configuration
+### Legacy read-only aliases (still supported)
+
+| Legacy | New Equivalent |
+|--------|----------------|
+| `repeat` | `set repeat` |
+| `advert interval` | `set advert.interval` |
+| `txpower` | `set tx` |
+| `name` | `set name` |
+
+## Node Configuration
 
 | Command | Description |
 |---------|-------------|
-| `name <name>` | Set node name (1-15 chars) |
-| `location <lat> <lon>` | Set GPS coordinates |
-| `location` | Show current location |
-| `location clear` | Clear location |
-| `time [timestamp]` | Show or set Unix time |
-| `nodetype chat\|repeater` | Set node type |
-| `passwd` | Show admin/guest passwords |
-| `passwd admin <pwd>` | Set admin password |
-| `passwd guest <pwd>` | Set guest password |
+| `set name <name>` | Set node name (1-15 chars), saves to EEPROM **MeshCore** |
+| `set lat <latitude>` | Set latitude (decimal, e.g. `45.123456`), saves to EEPROM **MeshCore** |
+| `set lon <longitude>` | Set longitude (decimal, e.g. `7.654321`), saves to EEPROM **MeshCore** |
+| `set repeat on\|off` | Enable/disable packet repeating |
+| `set flood.max <n>` | Set max flood hops (1-15) |
+| `mode 0\|1\|2` | Set power mode (0=performance, 1=balanced, 2=powersave) |
+| `powersaving on` | Set power save mode 2 (maximum savings) **MeshCore** |
+| `powersaving off` | Set power save mode 0 (performance) **MeshCore** |
 | `sleep on\|off` | Enable/disable deep sleep |
 | `rxboost on\|off` | Enable/disable RX gain boost |
+| `nodetype chat\|repeater` | Set node type (serial only) |
+| `time <timestamp>` | Set Unix time manually (serial only) |
+
+### Legacy configuration aliases (still supported)
+
+| Legacy | New Equivalent |
+|--------|----------------|
+| `name <name>` | `set name <name>` |
 
 ## Radio
 
 | Command | Description |
 |---------|-------------|
 | `radio` | Show current radio parameters |
-| `tempradio <freq> <bw> <sf> <cr>` | Set temporary radio params (lost on reboot) |
+| `set radio <freq>,<bw>,<sf>,<cr>` | Set radio parameters (comma-separated, serial only) **MeshCore** |
+| `tempradio <freq> <bw> <sf> <cr>` | Set temporary radio params (space-separated, serial only) |
 | `tempradio off` | Restore default radio params |
+| `tempradio` | Show temp radio status |
 
-## Network
+Example: `set radio 869.618,62.5,8,8` or `tempradio 869.618 62.5 8 8`
+
+## TX Power
 
 | Command | Description |
 |---------|-------------|
-| `advert` | Send ADVERT packet immediately |
-| `advert on\|off` | Enable/disable periodic ADVERT |
-| `advert interval` | Show ADVERT interval and next scheduled |
+| `set tx` | Show current TX power and auto status **MeshCore** |
+| `set tx <dBm>` | Set manual TX power (disables auto) **MeshCore** |
+| `set tx auto on` | Enable adaptive TX power **MeshCore** |
+| `set tx auto off` | Disable auto, restore max power **MeshCore** |
+
+### Legacy TX power aliases (still supported)
+
+| Legacy | New Equivalent |
+|--------|----------------|
+| `txpower` | `set tx` |
+| `txpower <dBm>` | `set tx <dBm>` |
+| `txpower auto on` | `set tx auto on` |
+| `txpower auto off` | `set tx auto off` |
+
+## ADVERT & Network
+
+| Command | Description |
+|---------|-------------|
+| `advert` | Send ADVERT packet immediately (flood) |
+| `advert local` | Send ADVERT packet (direct, 0-hop only) |
+| `set advert.interval <min>` | Set ADVERT interval in minutes (1-1440) **MeshCore** |
+| `set advert.interval` | Show current interval and next scheduled **MeshCore** |
+| `ping` | Send broadcast test packet (FLOOD) |
+| `ping <hash>` | Directed ping to node by hex hash, auto-PONG reply |
+| `trace <hash>` | Trace route to node, shows path and hop count |
+
+### Legacy ADVERT aliases (still supported)
+
+| Legacy | New Equivalent |
+|--------|----------------|
+| `advert interval <sec>` | `set advert.interval <min>` (note: old uses seconds, new uses minutes) |
+
+## Passwords & Security
+
+| Command | Description |
+|---------|-------------|
+| `password` | Show admin and guest passwords **MeshCore** |
+| `password <pwd>` | Set admin password (serial and remote) **MeshCore** |
+| `set guest.password <pwd>` | Set guest password **MeshCore** |
+
+### Legacy password aliases (still supported)
+
+| Legacy (serial) | New Equivalent |
+|--------|----------------|
+| `passwd` | `password` |
+| `passwd admin <pwd>` | `password <pwd>` |
+| `passwd guest <pwd>` | `set guest.password <pwd>` |
+
+| Legacy (remote) | New Equivalent |
+|--------|----------------|
+| `set password <pwd>` | `password <pwd>` |
+| `set guest <pwd>` | `set guest.password <pwd>` |
 
 ## Store-and-Forward Mailbox
 
-The repeater stores messages for offline nodes and re-delivers them when the node comes back online (sends an ADVERT). Storage: 2 persistent EEPROM slots + 4 volatile RAM slots = 6 messages max.
+The repeater stores messages for offline nodes and re-delivers them when the node comes back online (sends an ADVERT). Storage: 2 persistent EEPROM slots + 4 volatile RAM slots = 6 messages max, 24h TTL.
 
 | Command | Description |
 |---------|-------------|
 | `mailbox` | Show mailbox status: used/total, EEPROM (E) and RAM (R) counts |
 | `mailbox clear` | Clear all mailbox slots (admin only) |
 
-Output example: `Mbox:2/6 E:1 R:1` means 2 messages stored, 1 in EEPROM (persistent), 1 in RAM (lost on reboot). Each slot shows `E0` or `R3` prefix to indicate storage type.
-
 ## Health Monitor
 
-Automatic mesh health monitoring. Checks every 60 seconds for offline nodes (>30 min, at least 3 packets seen) and sends alerts to the configured destination.
+Automatic mesh health monitoring. Checks for offline nodes (>30 min) and sends alerts.
 
 | Command | Description |
 |---------|-------------|
-| `health` | Show node count, offline count, per-node SNR and last seen |
+| `health` | Dashboard: uptime, battery, online/offline nodes, problem nodes |
+| `alert` | Show alert status (on/off, destination) |
 | `alert on\|off` | Enable/disable automatic health alerts |
 | `alert dest <name>` | Set alert destination (by contact name) |
 | `alert clear` | Clear alert configuration |
-| `alert test` | Send a test alert immediately |
-| `alert` | Show alert status (on/off, destination) |
+| `alert test` | Send a test alert (serial only) |
 
 ## Daily Report
 
@@ -86,104 +168,110 @@ Automatic mesh health monitoring. Checks every 60 seconds for offline nodes (>30
 | `report test` | Send a test report immediately |
 | `report nodes` | Send a nodes report immediately |
 | `report time HH:MM` | Set report send time (24h format) |
+| `report dest <name>` | Set report destination (by contact name) |
 | `report clear` | Clear destination key and disable report |
-
-The destination key is set automatically when an admin logs in from the MeshCore app.
 
 ## Quiet Hours
 
-Reduce forward rate during configurable hours (e.g., 22:00-06:00). Saves battery. Requires TimeSync; without sync, full rate is used. Config is RAM-only (lost on reboot).
+Reduce forward rate during configurable hours. Requires TimeSync.
 
 | Command | Description |
 |---------|-------------|
 | `quiet` | Show quiet hours status |
-| `quiet <start> <end>` | Set quiet hours (0-23, admin) |
-| `quiet off` | Disable quiet hours (admin) |
+| `quiet <start> <end>` | Set quiet hours (0-23, e.g. `quiet 22 6`) |
+| `quiet off` | Disable quiet hours |
 
 ## Circuit Breaker
 
-Automatically blocks DIRECT forwarding to neighbours with degraded links (SNR < -10dB). After 5 minutes, transitions to half-open (test). Good SNR closes the breaker. FLOOD is never blocked.
+Blocks DIRECT forwarding to neighbours with degraded links (SNR < -10dB). After 5 min, transitions to half-open. Good SNR closes breaker. FLOOD is never blocked.
 
 | Command | Description |
 |---------|-------------|
 | `cb` | Show count of open circuit breakers |
 
-## Adaptive TX Power
-
-Adjusts TX power based on average neighbour SNR. High SNR (>+10dB) reduces power by 2dBm. Low SNR (<-5dB) increases by 2dBm. Range: 5-14 dBm (EU). Config is RAM-only.
+## Neighbours
 
 | Command | Description |
 |---------|-------------|
-| `txpower` | Show current TX power and auto status |
-| `txpower auto on` | Enable adaptive TX power (admin) |
-| `txpower auto off` | Disable and restore max power (admin) |
-| `txpower <N>` | Set manual TX power in dBm (admin, disables auto) |
+| `neighbours` / `neighbors` | List direct repeater neighbours |
+| `neighbor.remove <hex>` | Remove neighbour by pubkey hex prefix **MeshCore** |
 
-## Admin
+## Rate Limiting
+
+| Command | Description |
+|---------|-------------|
+| `ratelimit` | Show rate limiter status and blocked counts |
+| `ratelimit on\|off` | Enable/disable rate limiting |
+| `ratelimit reset` | Reset rate limit counters |
+
+Default limits: Login 5/min, Request 30/min, Forward 100/min.
+
+## Statistics & Maintenance
+
+| Command | Description |
+|---------|-------------|
+| `clear stats` | Reset session counters (RX/TX/FWD/ERR/ADV) **MeshCore** |
+| `savestats` | Force save persistent statistics to EEPROM (serial only) |
+
+## System
 
 | Command | Description |
 |---------|-------------|
 | `save` | Save configuration to EEPROM |
-| `savestats` | Force save statistics to EEPROM |
-| `resetstats` | Reset session statistics counters |
-| `ratelimit` | Show rate limiter status |
-| `ratelimit on\|off` | Enable/disable rate limiting |
-| `ratelimit reset` | Reset rate limit counters |
-| `newid` | Generate new Ed25519 identity |
-| `power` | Show power mode, RX boost, sleep status |
-| `acl` | Show passwords and active sessions |
-| `repeat` | Show repeat status and max hops |
-| `rssi` | Show last RSSI and SNR |
-| `mode 0\|1\|2` | Set power mode (0=perf, 1=balanced, 2=powersave) |
-| `set repeat on\|off` | Enable/disable packet repeating |
-| `set flood.max <n>` | Set max flood hops (1-15) |
-| `ping` | Send broadcast test packet (FLOOD) |
-| `ping <hash>` | Directed ping to node `<hash>`, auto-PONG reply |
-| `trace <hash>` | Trace route to node `<hash>`, shows path and hop count |
-| `reset` | Reset configuration to defaults |
+| `erase` | Reset configuration to factory defaults (alias of `reset`) **MeshCore** |
+| `reset` | Reset configuration to factory defaults |
 | `reboot` | Restart device |
+| `newid` | Generate new Ed25519 identity (serial only) |
 
-## Security
+## Serial-Only Commands
 
-### Rate Limits (default)
-- **Login**: 5 attempts per minute (brute-force protection)
-- **Request**: 30 requests per minute (spam protection)
-- **Forward**: 100 packets per minute (flood protection)
+These commands are only available via USB serial console, not remotely:
 
-### Sessions
-- Up to 8 concurrent sessions
-- Idle sessions expire after 1 hour
-- Admin and guest permission levels
+| Command | Description |
+|---------|-------------|
+| `contacts` | List known contacts |
+| `contact <hash>` | Show contact details and public key |
+| `nodetype chat\|repeater` | Set node type |
+| `time <timestamp>` | Set Unix time |
+| `newid` | Generate new identity |
+| `savestats` | Force save stats to EEPROM |
+| `tempradio ...` | Temporary radio parameters |
+| `set radio ...` | Set radio parameters |
+| `alert test` | Send test alert |
+| `msg <name> <message>` | Send direct message to contact |
 
 ## Remote Configuration (via MeshCore app)
 
-All CLI commands are available remotely via the MeshCore app's encrypted CLI channel. No USB cable needed - manage your repeater from anywhere in the mesh.
-
-**Note**: This is configuration-only, NOT firmware OTA. The firmware itself can only be updated via USB cable. Remote configuration lets you change settings, monitor status, and manage the repeater without physical access.
+All shared commands are available remotely via the MeshCore app's encrypted CLI channel.
 
 ### Guest-allowed commands (read-only)
-- `status`, `stats`, `lifetime`, `telemetry`
-- `radiostats`, `packetstats`, `radio`
-- `nodes`, `contacts`, `neighbours`, `identity`
-- `time`, `location`, `advert interval`
-- `repeat`, `power`, `health`, `mailbox`
-- `quiet`, `cb`, `txpower`
-- `rssi`, `help`
+
+```
+status  stats  ver  clock  time  lifetime  radiostats  packetstats
+telemetry  identity  location  nodes  neighbours  health  mailbox
+power  powersaving  radio  rssi  acl  quiet  cb
+set repeat  set advert.interval  set tx  set name
+alert  ratelimit  sleep  rxboost  help
+```
 
 ### Admin-only commands (read-write)
-- `name`, `location`, `location clear`
-- `set repeat on/off`, `set flood.max`, `set password`, `set guest`
-- `sleep on/off`, `rxboost on/off`, `mode 0/1/2`
-- `alert on/off/dest/clear/test`
-- `report on/off/dest/time/test/nodes`
-- `mailbox clear`, `ratelimit on/off/reset`, `resetstats`
-- `advert`, `advert interval`, `advert on/off`
-- `ping`, `ping <hash>`, `trace <hash>`
-- `quiet <start> <end>`, `quiet off`
-- `txpower auto on/off`, `txpower <N>`
-- `save`, `reset`, `reboot`
 
-## Radio Settings (EU868)
+```
+set name <X>  set lat <X>  set lon <X>
+set repeat on/off  set flood.max <N>
+set advert.interval <min>  set tx <dBm>  set tx auto on/off
+password <pwd>  set guest.password <pwd>
+powersaving on/off  mode 0/1/2
+sleep on/off  rxboost on/off
+advert  advert local  ping  ping <hash>  trace <hash>
+alert on/off/dest/clear  mailbox clear
+quiet <start> <end>  quiet off
+ratelimit on/off/reset  clear stats  neighbor.remove <hex>
+report on/off/dest/time/test/nodes
+save  erase  reset  reboot
+```
+
+## Radio Settings (EU868 default)
 
 | Parameter | Value |
 |-----------|-------|
@@ -197,10 +285,12 @@ All CLI commands are available remotely via the MeshCore app's encrypted CLI cha
 ## Tips
 
 1. Always `save` after changing configuration
-2. Set passwords before deploying in the field
-3. Use `radiostats` and `packetstats` to monitor link quality
-4. Use `tempradio` to test different radio parameters without saving
-5. Check `lifetime` to see accumulated statistics across reboots
-6. Use `health` to monitor mesh link quality and node availability
-7. Enable `alert` to get automatic notifications when nodes go offline
-8. The `mailbox` stores messages for offline nodes automatically - no config needed
+2. Set passwords before deploying: `password myAdminPwd` and `set guest.password myGuestPwd`
+3. Use `set lat` and `set lon` separately to set GPS coordinates
+4. Use `set advert.interval 5` for 5-minute ADVERT interval
+5. Use `set tx auto on` to enable adaptive TX power
+6. Use `powersaving on` for maximum battery life (mode 2)
+7. Use `health` to monitor mesh link quality and node availability
+8. Enable `alert on` to get automatic notifications when nodes go offline
+9. The `mailbox` stores messages for offline nodes automatically - no config needed
+10. Use `tempradio` to test radio parameters without persisting, `set radio` to apply

@@ -61,9 +61,11 @@ Default settings (EU868):
 
 Connect at 115200 baud. Type `help` for command list.
 
-See [Command Reference](release/COMMANDS.md) for the full list of 50+ commands.
+See [Command Reference](release/COMMANDS.md) for the full list of 60+ commands.
 
-Key command categories: status, configuration, radio, network, mailbox, health monitor, daily report, alerts, rate limiting, ping/trace, and system administration. All commands are available both via serial console and remotely via the MeshCore app's encrypted CLI.
+Commands use MeshCore-compatible naming (e.g. `set name`, `set tx`, `password`). Legacy names are kept as aliases for backwards compatibility.
+
+Key command categories: status, configuration, radio, network, mailbox, health monitor, daily report, alerts, rate limiting, ping/trace, and system administration. All shared commands are available both via serial console and remotely via the MeshCore app's encrypted CLI.
 
 ## Project Structure
 
@@ -171,6 +173,8 @@ Key files:
 | Light Sleep | Brief delays with quick wake |
 
 Commands:
+- `powersaving on/off` - Quick switch: `on`=mode 2, `off`=mode 0
+- `mode 0/1/2` - Set power mode (0=perf, 1=balanced, 2=powersave)
 - `sleep on/off` - Enable/disable deep sleep
 - `rxboost on/off` - Enable/disable RX gain boost
 
@@ -190,6 +194,12 @@ MIT License - See LICENSE file for details.
 - [RadioLib](https://github.com/jgromes/RadioLib) - LoRa library
 
 ## Changelog
+
+### v0.5.1 (2026-02-15)
+- **MeshCore CLI Compatibility** - Renamed commands to match MeshCore standard naming
+  - `set name`, `set lat`, `set lon`, `set tx`, `set advert.interval`, `password`, `set guest.password`
+  - New commands: `ver`, `clock`, `powersaving on/off`, `clear stats`, `neighbor.remove`, `set radio`, `erase`
+  - All legacy command names kept as aliases for backwards compatibility
 
 ### v0.5.0 (2026-02-14)
 - **Store-and-Forward Mailbox** - Messages for offline nodes stored and re-delivered automatically
