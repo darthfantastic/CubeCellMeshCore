@@ -405,6 +405,20 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP("lon=%ld.%06ld\n", lonE6/1000000, abs(lonE6%1000000));
         } else CP("E:lon\n");
     }
+    else if (strncmp(cmd, "set freq ", 9) == 0) {
+        uint32_t freqM;
+        if (parseMHz3(cmd + 9, &freqM) && freqM >= 150000 && freqM <= 960000) {
+            tempFrequency = freqM / 1000.0f;
+            if (!tempRadioActive) {
+                tempBandwidth = MC_BANDWIDTH;
+                tempSpreadingFactor = MC_SPREADING;
+                tempCodingRate = MC_CODING_RATE;
+            }
+            tempRadioActive = true;
+            setupRadio(); startReceive(); calculateTimings();
+            CP("freq=%lu.%03lu\n", freqM/1000, freqM%1000);
+        } else CP("E:freq\n");
+    }
     else if (strncmp(cmd, "set advert.interval ", 20) == 0) {
         uint32_t minutes = strtoul(cmd + 20, NULL, 10);
         if (minutes >= 1 && minutes <= 1440) {
