@@ -569,9 +569,31 @@ class SimRepeater(SimNode):
         elif command == "advert":
             self.send_advert(True)
             return f"{TAG_ADVERT} sent"
+        elif cmd == "get name":
+            return f"Name:{self.identity.name}"
+        elif cmd == "get repeat":
+            return f"Rpt:{'on' if self.config.repeat_enabled else 'off'} hops:{self.config.max_flood_hops}"
+        elif cmd == "get flood.max":
+            return f"{self.config.max_flood_hops}"
+        elif cmd == "get advert.interval":
+            return f"Int:{self.config.advert_interval_ms // 60000}m"
+        elif cmd == "get tx":
+            return f"TxP:{self.current_tx_power}dBm"
+        elif cmd == "get radio":
+            return "sim radio"
+        elif cmd == "get freq":
+            return "sim freq"
+        elif cmd == "get guest.password":
+            return f"{self.config.guest_password}" if self.config.guest_password else "(off)"
+        elif cmd == "get public.key":
+            return self.identity.public_key.hex()
+        elif cmd == "get lat":
+            return "0"
+        elif cmd == "get lon":
+            return "0"
         elif command == "help":
             return ("status stats ver clock nodes ping <hash> trace <hash> "
-                    "advert powersaving clear stats help")
+                    "advert powersaving clear stats get <param> help")
         else:
             return f"Unknown: {cmd}"
 

@@ -200,10 +200,10 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP("%ld.%06ld,%ld.%06ld\n", lat/1000000, abs(lat%1000000), lon/1000000, abs(lon%1000000));
         } else CP("No loc\n");
     }
-    else if (strcmp(cmd, "repeat") == 0 || strcmp(cmd, "set repeat") == 0) {
+    else if (strcmp(cmd, "repeat") == 0 || strcmp(cmd, "set repeat") == 0 || strcmp(cmd, "get repeat") == 0) {
         CP("Rpt:%s hops:%d\n", repeaterHelper.isRepeatEnabled() ? "on" : "off", repeaterHelper.getMaxFloodHops());
     }
-    else if (strcmp(cmd, "advert interval") == 0 || strcmp(cmd, "set advert.interval") == 0) {
+    else if (strcmp(cmd, "advert interval") == 0 || strcmp(cmd, "set advert.interval") == 0 || strcmp(cmd, "get advert.interval") == 0) {
         CP("Int:%lum next:%lus\n", advertGen.getInterval() / 60000, advertGen.getTimeUntilNext());
     }
     else if (strcmp(cmd, "radiostats") == 0) {
@@ -217,7 +217,7 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             ps.numRecvPackets, ps.numSentPackets,
             ps.numRecvFlood, ps.numSentFlood, ps.numRecvDirect, ps.numSentDirect);
     }
-    else if (strcmp(cmd, "radio") == 0) {
+    else if (strcmp(cmd, "radio") == 0 || strcmp(cmd, "get radio") == 0) {
         { uint32_t fM = (uint32_t)(MC_FREQUENCY * 1000); uint32_t bT = (uint32_t)(MC_BANDWIDTH * 10);
         CP("%lu.%03lu BW%lu.%lu SF%d CR%d %ddBm\n", fM/1000, fM%1000, bT/10, bT%10, MC_SPREADING, MC_CODING_RATE, MC_TX_POWER); }
         if (tempRadioActive) {
@@ -321,12 +321,42 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "cb") == 0) {
         CP("CB:%d\n", repeaterHelper.getNeighbours().getCircuitBreakerCount());
     }
-    else if (strcmp(cmd, "txpower") == 0 || strcmp(cmd, "set tx") == 0) {
+    else if (strcmp(cmd, "txpower") == 0 || strcmp(cmd, "set tx") == 0 || strcmp(cmd, "get tx") == 0) {
         CP("TxP:%ddBm max:%d auto:%s\n", repeaterHelper.getCurrentTxPower(),
             MC_TX_POWER, repeaterHelper.isAdaptiveTxEnabled() ? "on" : "off");
     }
     else if (strcmp(cmd, "powersaving") == 0) {
         CP("PS:%d\n", powerSaveMode);
+    }
+    else if (strcmp(cmd, "get name") == 0) {
+        CP("Name:%s\n", nodeIdentity.getNodeName());
+    }
+    else if (strcmp(cmd, "get lat") == 0) {
+        if (nodeIdentity.hasLocation()) {
+            int32_t lat = nodeIdentity.getLatitude();
+            CP("%ld.%06ld\n", lat/1000000, abs(lat%1000000));
+        } else CP("0\n");
+    }
+    else if (strcmp(cmd, "get lon") == 0) {
+        if (nodeIdentity.hasLocation()) {
+            int32_t lon = nodeIdentity.getLongitude();
+            CP("%ld.%06ld\n", lon/1000000, abs(lon%1000000));
+        } else CP("0\n");
+    }
+    else if (strcmp(cmd, "get freq") == 0) {
+        uint32_t fM = tempRadioActive ? (uint32_t)(tempFrequency * 1000) : (uint32_t)(MC_FREQUENCY * 1000);
+        CP("%lu.%03lu\n", fM/1000, fM%1000);
+    }
+    else if (strcmp(cmd, "get flood.max") == 0) {
+        CP("%d\n", repeaterHelper.getMaxFloodHops());
+    }
+    else if (strcmp(cmd, "get guest.password") == 0) {
+        CP("%s\n", strlen(sessionManager.getGuestPassword()) > 0 ? sessionManager.getGuestPassword() : "(off)");
+    }
+    else if (strcmp(cmd, "get public.key") == 0) {
+        const uint8_t* pk = nodeIdentity.getPublicKey();
+        for (int i = 0; i < 32; i++) CP("%02x", pk[i]);
+        CP("\n");
     }
     // --- Admin-only commands ---
     else if (!isAdmin) {
