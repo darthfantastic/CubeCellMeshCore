@@ -384,6 +384,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "set adc.multiplier") == 0 || strcmp(cmd, "get adc.multiplier") == 0) {
         CP("adc.mul:%d.%d\n", configAdcMultiplier / 10, configAdcMultiplier % 10);
     }
+    else if (strcmp(cmd, "set agc.reset.interval") == 0 || strcmp(cmd, "get agc.reset.interval") == 0) {
+        CP("agc.rst:%ds\n", configAgcResetInterval);
+    }
     else if (strcmp(cmd, "set flood.advert.interval") == 0 || strcmp(cmd, "get flood.advert.interval") == 0) {
         CP("flood.adv.int:%luh\n", floodAdvertIntervalMs > 0 ? floodAdvertIntervalMs / 3600000UL : 0);
     }
@@ -672,6 +675,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         if (hours == 0) { floodAdvertIntervalMs = 0; CP("flood.adv.int:auto\n"); }
         else if (hours >= 3 && hours <= 48) { floodAdvertIntervalMs = hours * 3600000UL; CP("flood.adv.int:%luh\n", hours); }
         else CP("E:0,3-48\n");
+    }
+    else if (strncmp(cmd, "set agc.reset.interval ", 23) == 0) {
+        uint16_t secs = (uint16_t)atoi(cmd + 23);
+        secs = (secs / 4) * 4;  // Round down to multiple of 4
+        if (secs <= 3600) { configAgcResetInterval = secs; CP("agc.rst:%ds\n", secs); }
+        else CP("E:0-3600\n");
     }
     else if (strncmp(cmd, "set af ", 7) == 0) {
         // Parse "X.Y" as tenths (e.g. "1.5" -> 15)
@@ -3141,6 +3150,15 @@ void loop() {
         tempRadioExpireTime = 0;
         setupRadio(); startReceive(); calculateTimings();
         LOG(TAG_INFO " TmpRadio expired\n\r");
+    }
+
+    // Periodic AGC reset (restarts receiver to reset gain control)
+    if (configAgcResetInterval > 0) {
+        uint32_t now = millis();
+        if ((now - lastAgcResetTime) >= (uint32_t)configAgcResetInterval * 1000UL) {
+            lastAgcResetTime = now;
+            if (!dio1Flag) startReceive();
+        }
     }
 
     // Handle pending reboot from CLI command
