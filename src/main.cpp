@@ -152,10 +152,23 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         telemetry.update();
         CP("Batt:%dmV(%d%%) Up:%lus\n", telemetry.getBatteryMv(), telemetry.getBatteryPercent(), millis() / 1000);
     }
-    else if (strcmp(cmd, "nodes") == 0) {
+    else if (strcmp(cmd, "nodes") == 0 || strncmp(cmd, "nodes ", 6) == 0) {
         uint8_t count = seenNodes.getCount();
-        CP("Nodes:%d\n", count);
-        for (uint8_t i = 0; i < count; i++) {
+        uint8_t start = 0, end = count;
+        const uint8_t PAGE_SIZE = 3;
+        if (cmd[5] == ' ') {
+            uint8_t page = (uint8_t)atoi(cmd + 6);
+            start = page * PAGE_SIZE;
+            end = start + PAGE_SIZE;
+            if (start >= count) { CP("Nodes:%d pg:%d empty\n", count, page); }
+            else {
+                if (end > count) end = count;
+                CP("Nodes:%d pg:%d/%d\n", count, page, (count + PAGE_SIZE - 1) / PAGE_SIZE - 1);
+            }
+        } else {
+            CP("Nodes:%d\n", count);
+        }
+        for (uint8_t i = start; i < end; i++) {
             const SeenNode* n = seenNodes.getNode(i);
             if (n) {
                 if (ctx.buf && ctx.len >= ctx.maxLen - 48) break;
