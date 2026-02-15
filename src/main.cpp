@@ -132,6 +132,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         CP("RX:%lu TX:%lu FWD:%lu E:%lu ADV:%lu/%lu Q:%d\n",
             rxCount, txCount, fwdCount, errCount, advTxCount, advRxCount, txQueue.getCount());
     }
+    else if (strcmp(cmd, "stats-core") == 0) {
+        telemetry.update();
+        CP("Batt:%dmV(%d%%) Up:%lus Q:%d/%d\n",
+            telemetry.getBatteryMv(), telemetry.getBatteryPercent(),
+            millis() / 1000, txQueue.getCount(), MC_TX_QUEUE_SIZE);
+    }
     else if (strcmp(cmd, "ver") == 0) {
         CP("%s\n", FIRMWARE_VERSION);
     }
@@ -209,12 +215,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "advert interval") == 0 || strcmp(cmd, "set advert.interval") == 0 || strcmp(cmd, "get advert.interval") == 0) {
         CP("Int:%lum next:%lus\n", advertGen.getInterval() / 60000, advertGen.getTimeUntilNext());
     }
-    else if (strcmp(cmd, "radiostats") == 0) {
+    else if (strcmp(cmd, "radiostats") == 0 || strcmp(cmd, "stats-radio") == 0) {
         const RadioStats& rs = repeaterHelper.getRadioStats();
         CP("Noise:%ddBm RSSI:%d SNR:%d.%ddB\n", rs.noiseFloor, rs.lastRssi, rs.lastSnr/4, abs(rs.lastSnr%4)*25);
         CP("Airtime TX:%lus RX:%lus\n", rs.txAirTimeSec, rs.rxAirTimeSec);
     }
-    else if (strcmp(cmd, "packetstats") == 0) {
+    else if (strcmp(cmd, "packetstats") == 0 || strcmp(cmd, "stats-packets") == 0) {
         const PacketStats& ps = repeaterHelper.getPacketStats();
         CP("RX:%lu TX:%lu FL:%lu/%lu DR:%lu/%lu\n",
             ps.numRecvPackets, ps.numSentPackets,
