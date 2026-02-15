@@ -370,6 +370,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "set direct.txdelay") == 0 || strcmp(cmd, "get direct.txdelay") == 0) {
         CP("direct.txdelay:%d\n", configDirectTxDelay);
     }
+    else if (strcmp(cmd, "set flood.advert.interval") == 0 || strcmp(cmd, "get flood.advert.interval") == 0) {
+        CP("flood.adv.int:%luh\n", floodAdvertIntervalMs > 0 ? floodAdvertIntervalMs / 3600000UL : 0);
+    }
     // --- Admin-only commands ---
     else if (!isAdmin) {
         return false;  // not a read-only command; caller handles admin gate
@@ -607,6 +610,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         uint16_t v = (uint16_t)atoi(cmd + 19);
         if (v <= 500) { configDirectTxDelay = v; CP("direct.txdelay:%d\n", v); }
         else CP("E:0-500\n");
+    }
+    else if (strncmp(cmd, "set flood.advert.interval ", 25) == 0) {
+        uint32_t hours = strtoul(cmd + 25, NULL, 10);
+        if (hours == 0) { floodAdvertIntervalMs = 0; CP("flood.adv.int:auto\n"); }
+        else if (hours >= 3 && hours <= 48) { floodAdvertIntervalMs = hours * 3600000UL; CP("flood.adv.int:%luh\n", hours); }
+        else CP("E:0,3-48\n");
     }
     else if (strcmp(cmd, "save") == 0) {
         saveConfig(); CP("saved\n");
@@ -1914,12 +1923,29 @@ void checkAdvertBeacon() {
         pendingAdvertTime = 0;  // Clear pending
         LOG(TAG_ADVERT " Sched ADV post-sync\n\r");
         sendAdvert(true);
+        lastFloodAdvertTime = millis();
         return;  // Don't send another one immediately
     }
 
-    // Regular beacon interval (only if time is synced)
-    if (advertGen.shouldSend() && timeSync.isSynchronized()) {
-        sendAdvert(true);
+    if (!timeSync.isSynchronized()) return;
+
+    // Separate flood interval mode
+    if (floodAdvertIntervalMs > 0) {
+        // Local ADVERT on normal interval
+        if (advertGen.shouldSend()) {
+            sendAdvert(false);  // local only
+        }
+        // Flood ADVERT on longer interval
+        uint32_t now = millis();
+        if (lastFloodAdvertTime == 0 || (now - lastFloodAdvertTime) >= floodAdvertIntervalMs) {
+            lastFloodAdvertTime = now;
+            sendAdvert(true);  // flood
+        }
+    } else {
+        // Default: all ADVERTs are flood
+        if (advertGen.shouldSend()) {
+            sendAdvert(true);
+        }
     }
 }
 

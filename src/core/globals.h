@@ -76,6 +76,8 @@ extern uint32_t tempRadioExpireTime; // millis() when temp radio auto-expires (0
 //=============================================================================
 // Configurable forwarding delays (percentage: 100 = 1.0x default)
 //=============================================================================
+extern uint32_t floodAdvertIntervalMs;   // Separate flood ADVERT interval (0=use local)
+extern uint32_t lastFloodAdvertTime;     // Last time flood ADVERT was sent
 extern uint16_t configTxDelayFactor;     // TX jitter factor (0-500, default 100)
 extern uint16_t configRxDelayFactor;     // RX delay factor (0-500, default 100)
 extern uint16_t configDirectTxDelay;     // Direct TX delay factor (0-500, default 100)

@@ -55,6 +55,8 @@ uint32_t tempRadioExpireTime = 0;
 //=============================================================================
 // Configurable forwarding delays
 //=============================================================================
+uint32_t floodAdvertIntervalMs = 0;
+uint32_t lastFloodAdvertTime = 0;
 uint16_t configTxDelayFactor = 100;
 uint16_t configRxDelayFactor = 100;
 uint16_t configDirectTxDelay = 100;
