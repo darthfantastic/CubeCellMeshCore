@@ -539,7 +539,7 @@ class SimRepeater(SimNode):
         elif command == "stats":
             return self._cmd_stats()
         elif command == "ver":
-            return "sim-0.4.0"
+            return "sim-0.5.2"
         elif command == "board":
             return "SIM-NODE"
         elif command == "clock" or (command == "time" and len(parts) == 1):
@@ -727,7 +727,7 @@ class SimCompanion(SimNode):
         elif command == "status":
             return f"{self.identity.name} {self.identity.hash:02X} (companion)"
         elif command == "ver":
-            return "sim-0.4.0"
+            return "sim-0.5.2"
         elif command == "board":
             return "SIM-NODE"
         elif command == "clock" or (command == "time" and len(parts) == 1):
