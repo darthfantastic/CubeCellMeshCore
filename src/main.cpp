@@ -361,6 +361,15 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         for (int i = 0; i < 32; i++) CP("%02x", pk[i]);
         CP("\n");
     }
+    else if (strcmp(cmd, "set txdelay") == 0 || strcmp(cmd, "get txdelay") == 0) {
+        CP("txdelay:%d\n", configTxDelayFactor);
+    }
+    else if (strcmp(cmd, "set rxdelay") == 0 || strcmp(cmd, "get rxdelay") == 0) {
+        CP("rxdelay:%d\n", configRxDelayFactor);
+    }
+    else if (strcmp(cmd, "set direct.txdelay") == 0 || strcmp(cmd, "get direct.txdelay") == 0) {
+        CP("direct.txdelay:%d\n", configDirectTxDelay);
+    }
     // --- Admin-only commands ---
     else if (!isAdmin) {
         return false;  // not a read-only command; caller handles admin gate
@@ -583,6 +592,21 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             bool removed = repeaterHelper.getNeighbours().removeByPrefix(prefixBytes, prefixLen);
             CP(removed ? "nbr rm\n" : "E:not found\n");
         } else CP("E:hex prefix\n");
+    }
+    else if (strncmp(cmd, "set txdelay ", 12) == 0) {
+        uint16_t v = (uint16_t)atoi(cmd + 12);
+        if (v <= 500) { configTxDelayFactor = v; CP("txdelay:%d\n", v); }
+        else CP("E:0-500\n");
+    }
+    else if (strncmp(cmd, "set rxdelay ", 12) == 0) {
+        uint16_t v = (uint16_t)atoi(cmd + 12);
+        if (v <= 500) { configRxDelayFactor = v; CP("rxdelay:%d\n", v); }
+        else CP("E:0-500\n");
+    }
+    else if (strncmp(cmd, "set direct.txdelay ", 19) == 0) {
+        uint16_t v = (uint16_t)atoi(cmd + 19);
+        if (v <= 500) { configDirectTxDelay = v; CP("direct.txdelay:%d\n", v); }
+        else CP("E:0-500\n");
     }
     else if (strcmp(cmd, "save") == 0) {
         saveConfig(); CP("saved\n");
@@ -3057,12 +3081,13 @@ void loop() {
             uint32_t airtime = calculatePacketAirtime(pkt.payloadLen + pkt.pathLen + 2);
             uint32_t txDelay;
             if (pkt.header.isDirect()) {
-                // DIRECT: half jitter only (higher priority)
-                txDelay = MC_TX_DELAY_MIN + calcTxJitter(airtime) / 2;
+                // DIRECT: half jitter only (higher priority), scaled by direct.txdelay
+                txDelay = MC_TX_DELAY_MIN + calcTxJitter(airtime) / 2 * configDirectTxDelay / 100;
             } else {
-                // FLOOD: rxDelay (SNR-weighted) + full jitter
+                // FLOOD: rxDelay (SNR-weighted) + full jitter, scaled by factors
                 uint8_t score = calcSnrScore(pkt.snr);
-                txDelay = MC_TX_DELAY_MIN + calcRxDelay(score, airtime) + calcTxJitter(airtime);
+                txDelay = MC_TX_DELAY_MIN + calcRxDelay(score, airtime) * configRxDelayFactor / 100
+                        + calcTxJitter(airtime) * configTxDelayFactor / 100;
             }
             LOG(TAG_TX " Wait %lums\n\r", txDelay);
 

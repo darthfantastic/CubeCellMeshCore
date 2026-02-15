@@ -53,6 +53,13 @@ uint8_t tempCodingRate = 0;
 uint32_t tempRadioExpireTime = 0;
 
 //=============================================================================
+// Configurable forwarding delays
+//=============================================================================
+uint16_t configTxDelayFactor = 100;
+uint16_t configRxDelayFactor = 100;
+uint16_t configDirectTxDelay = 100;
+
+//=============================================================================
 // Power saving
 //=============================================================================
 bool deepSleepEnabled = MC_DEEP_SLEEP_ENABLED;

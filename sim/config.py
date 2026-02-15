@@ -31,6 +31,9 @@ class NodeConfig:
     max_flood_hops: int = 8
     repeat_enabled: bool = True
     power_save_mode: int = 1
+    tx_delay_factor: int = 100       # percentage (0-500, 100 = 1.0x)
+    rx_delay_factor: int = 100
+    direct_tx_delay: int = 100
 
 
 @dataclass

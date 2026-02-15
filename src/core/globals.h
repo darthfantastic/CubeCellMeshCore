@@ -74,6 +74,13 @@ extern uint8_t tempCodingRate;      // 5-8 (for 4/5 to 4/8)
 extern uint32_t tempRadioExpireTime; // millis() when temp radio auto-expires (0=never)
 
 //=============================================================================
+// Configurable forwarding delays (percentage: 100 = 1.0x default)
+//=============================================================================
+extern uint16_t configTxDelayFactor;     // TX jitter factor (0-500, default 100)
+extern uint16_t configRxDelayFactor;     // RX delay factor (0-500, default 100)
+extern uint16_t configDirectTxDelay;     // Direct TX delay factor (0-500, default 100)
+
+//=============================================================================
 // Power saving
 //=============================================================================
 extern bool deepSleepEnabled;

@@ -593,6 +593,30 @@ class SimRepeater(SimNode):
             return "0"
         elif cmd == "get lon":
             return "0"
+        elif cmd in ("set txdelay", "get txdelay"):
+            return f"txdelay:{self.config.tx_delay_factor}"
+        elif cmd in ("set rxdelay", "get rxdelay"):
+            return f"rxdelay:{self.config.rx_delay_factor}"
+        elif cmd in ("set direct.txdelay", "get direct.txdelay"):
+            return f"direct.txdelay:{self.config.direct_tx_delay}"
+        elif cmd.startswith("set txdelay "):
+            v = int(cmd.split()[2])
+            if 0 <= v <= 500:
+                self.config.tx_delay_factor = v
+                return f"txdelay:{v}"
+            return "E:0-500"
+        elif cmd.startswith("set rxdelay "):
+            v = int(cmd.split()[2])
+            if 0 <= v <= 500:
+                self.config.rx_delay_factor = v
+                return f"rxdelay:{v}"
+            return "E:0-500"
+        elif cmd.startswith("set direct.txdelay "):
+            v = int(cmd.split()[2])
+            if 0 <= v <= 500:
+                self.config.direct_tx_delay = v
+                return f"direct.txdelay:{v}"
+            return "E:0-500"
         elif command == "help":
             return ("status stats ver clock nodes ping <hash> trace <hash> "
                     "advert powersaving clear stats get <param> help")
