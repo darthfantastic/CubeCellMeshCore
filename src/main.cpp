@@ -593,6 +593,10 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "reboot") == 0) {
         CP("reboot\n");
     }
+    else if (strcmp(cmd, "clkreboot") == 0) {
+        timeSync = TimeSync();
+        CP("clkreboot\n");
+    }
     else {
         return false;  // command not handled
     }
@@ -611,8 +615,8 @@ void processCommand(char* cmd) {
 
     // Try shared dispatcher first (serial is always admin)
     if (dispatchSharedCommand(cmd, ctx, true)) {
-        // "reboot" needs special handling for serial
-        if (strcmp(cmd, "reboot") == 0) {
+        // "reboot" and "clkreboot" need special handling for serial
+        if (strcmp(cmd, "reboot") == 0 || strcmp(cmd, "clkreboot") == 0) {
             delay(100);
             #ifdef CUBECELL
             NVIC_SystemReset();
@@ -923,7 +927,7 @@ uint16_t processRemoteCommand(const char* cmd, char* response, uint16_t maxLen, 
     // Try shared dispatcher first
     if (dispatchSharedCommand(cmd, ctx, isAdmin)) {
         // Handle reboot for remote
-        if (strcmp(cmd, "reboot") == 0) {
+        if (strcmp(cmd, "reboot") == 0 || strcmp(cmd, "clkreboot") == 0) {
             pendingReboot = true;
             rebootTime = millis() + 500;
         }
