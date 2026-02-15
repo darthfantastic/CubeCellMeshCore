@@ -361,6 +361,14 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         for (int i = 0; i < 32; i++) CP("%02x", pk[i]);
         CP("\n");
     }
+    else if (strcmp(cmd, "get owner.info") == 0 || strcmp(cmd, "set owner.info") == 0) {
+        if (ownerInfo[0]) {
+            for (const char* p = ownerInfo; *p; p++) {
+                if (*p == '|') CP("\n"); else CP("%c", *p);
+            }
+            CP("\n");
+        } else CP("(none)\n");
+    }
     else if (strcmp(cmd, "set txdelay") == 0 || strcmp(cmd, "get txdelay") == 0) {
         CP("txdelay:%d\n", configTxDelayFactor);
     }
@@ -631,6 +639,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         if (hours == 0) { floodAdvertIntervalMs = 0; CP("flood.adv.int:auto\n"); }
         else if (hours >= 3 && hours <= 48) { floodAdvertIntervalMs = hours * 3600000UL; CP("flood.adv.int:%luh\n", hours); }
         else CP("E:0,3-48\n");
+    }
+    else if (strncmp(cmd, "set owner.info ", 15) == 0) {
+        const char* txt = cmd + 15;
+        strncpy(ownerInfo, txt, MC_OWNER_INFO_MAX - 1);
+        ownerInfo[MC_OWNER_INFO_MAX - 1] = '\0';
+        CP("owner.info set\n");
     }
     else if (strcmp(cmd, "save") == 0) {
         saveConfig(); CP("saved\n");
