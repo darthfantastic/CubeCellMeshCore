@@ -135,6 +135,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "ver") == 0) {
         CP("%s\n", FIRMWARE_VERSION);
     }
+    else if (strcmp(cmd, "board") == 0) {
+        CP("HTCC-AB01\n");
+    }
     else if (strcmp(cmd, "time") == 0 || strcmp(cmd, "clock") == 0) {
         if (timeSync.isSynchronized()) CP("T:%lu sync\n", timeSync.getTimestamp());
         else CP("T:nosync\n");

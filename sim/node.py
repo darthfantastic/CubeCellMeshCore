@@ -540,6 +540,8 @@ class SimRepeater(SimNode):
             return self._cmd_stats()
         elif command == "ver":
             return "sim-0.4.0"
+        elif command == "board":
+            return "SIM-NODE"
         elif command == "clock" or (command == "time" and len(parts) == 1):
             if self.time_sync.is_synchronized():
                 return f"T:{self.time_sync.get_timestamp()} sync"
@@ -702,11 +704,13 @@ class SimCompanion(SimNode):
             return f"{self.identity.name} {self.identity.hash:02X} (companion)"
         elif command == "ver":
             return "sim-0.4.0"
+        elif command == "board":
+            return "SIM-NODE"
         elif command == "clock" or (command == "time" and len(parts) == 1):
             if self.time_sync.is_synchronized():
                 return f"T:{self.time_sync.get_timestamp()} sync"
             return "T:nosync"
         elif command == "help":
-            return "status ver clock ping <hash> trace <hash> advert help"
+            return "status ver board clock ping <hash> trace <hash> advert help"
         else:
             return f"Unknown: {cmd}"
