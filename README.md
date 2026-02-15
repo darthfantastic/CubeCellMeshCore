@@ -23,8 +23,8 @@ MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 - **Board**: Heltec CubeCell HTCC-AB01
 - **MCU**: ASR6501 SiP (ARM Cortex-M0+ @ 48 MHz + SX1262)
 - **Radio**: SX1262 LoRa transceiver (integrated, no FPU)
-- **Flash**: 128 KB (91.0% used, ~12 KB free)
-- **RAM**: 16 KB (47.9% static, ~8 KB free at runtime incl. stack/heap)
+- **Flash**: 128 KB (97.9% used, ~2.7 KB free)
+- **RAM**: 16 KB (48.3% static, ~8 KB free at runtime incl. stack/heap)
 - **Deep sleep**: ~3.5 uA (MCU + radio)
 
 ## Quick Start
@@ -61,11 +61,11 @@ Default settings (EU868):
 
 Connect at 115200 baud. Type `help` for command list.
 
-See [Command Reference](release/COMMANDS.md) for the full list of 60+ commands.
+See [Command Reference](release/COMMANDS.md) for the full list of 80+ commands.
 
-Commands use MeshCore-compatible naming (e.g. `set name`, `set tx`, `password`). Legacy names are kept as aliases for backwards compatibility.
+Commands use MeshCore-compatible naming (e.g. `set name`, `get name`, `set tx`, `password`). Legacy names are kept as aliases for backwards compatibility.
 
-Key command categories: status, configuration, radio, network, mailbox, health monitor, daily report, alerts, rate limiting, ping/trace, and system administration. All shared commands are available both via serial console and remotely via the MeshCore app's encrypted CLI.
+Key command categories: status, configuration, radio, network, mailbox, health monitor, daily report, alerts, rate limiting, ping/trace, identity/security, and system administration. All shared commands are available both via serial console and remotely via the MeshCore app's encrypted CLI.
 
 ## Project Structure
 
@@ -194,6 +194,18 @@ MIT License - See LICENSE file for details.
 - [RadioLib](https://github.com/jgromes/RadioLib) - LoRa library
 
 ## Changelog
+
+### v0.5.2 (2026-02-15)
+- **Extended MeshCore CLI** - 23 new commands for full MeshCore standard compatibility
+  - `get` aliases: `get name`, `get lat`, `get lon`, `get tx`, `get radio`, `get freq`, `get repeat`, `get flood.max`, `get advert.interval`, `get guest.password`, `get public.key`
+  - Radio: `set freq <MHz>`, `tempradio` with timeout (5th parameter in minutes)
+  - Identity: `get/set prv.key` (Ed25519 seed backup/restore), `get/set owner.info`
+  - Tuning: `get/set af` (airtime factor), `get/set adc.multiplier` (battery ADC calibration)
+  - Forwarding: `get/set txdelay`, `get/set rxdelay`, `get/set direct.txdelay`
+  - Network: `get/set flood.advert.interval`, `get/set agc.reset.interval`
+  - Security: `setperm <pubkey> <perm>` (per-node ACL permissions)
+  - Stats aliases: `stats-core`, `stats-radio`, `stats-packets`
+  - System: `board`, `clkreboot`, `log`/`log start`/`log stop`/`log erase`
 
 ### v0.5.1 (2026-02-15)
 - **MeshCore CLI Compatibility** - Renamed commands to match MeshCore standard naming

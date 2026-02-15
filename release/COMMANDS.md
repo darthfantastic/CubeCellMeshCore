@@ -1,4 +1,4 @@
-# CubeCellMeshCore v0.5.1 - Command Reference
+# CubeCellMeshCore v0.5.2 - Command Reference
 
 Serial console at 115200 baud. Type `help` for command list.
 
@@ -11,7 +11,11 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `help` | Show available commands |
 | `status` | Firmware version, node name/hash, uptime, time sync |
 | `stats` | Session counters: RX/TX/FWD/ERR, ADV TX/RX, queue length |
+| `stats-core` | Battery voltage/percent, uptime, queue status **MeshCore** |
+| `stats-radio` | Alias for `radiostats` **MeshCore** |
+| `stats-packets` | Alias for `packetstats` **MeshCore** |
 | `ver` | Show firmware version **MeshCore** |
+| `board` | Show hardware board name (HTCC-AB01) **MeshCore** |
 | `clock` | Show current time (alias of `time`) **MeshCore** |
 | `time` | Show current time and sync status |
 | `lifetime` | Persistent stats: boot count, total uptime, RX/TX/FWD |
@@ -30,19 +34,34 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `radio` | Show current radio parameters (+ temp radio if active) |
 | `rssi` | Show last RSSI and SNR |
 | `acl` | Show admin/guest passwords and active session count |
-| `set repeat` | Show repeat status and max hops **MeshCore** |
-| `set advert.interval` | Show ADVERT interval (minutes) and next scheduled **MeshCore** |
-| `set tx` | Show current TX power, max, auto status **MeshCore** |
-| `set name` | Show current node name **MeshCore** |
+| `set repeat` / `get repeat` | Show repeat status and max hops **MeshCore** |
+| `set advert.interval` / `get advert.interval` | Show ADVERT interval (minutes) and next scheduled **MeshCore** |
+| `set tx` / `get tx` | Show current TX power, max, auto status **MeshCore** |
+| `set name` / `get name` | Show current node name **MeshCore** |
+| `get lat` | Show current latitude **MeshCore** |
+| `get lon` | Show current longitude **MeshCore** |
+| `get freq` | Show current radio frequency **MeshCore** |
+| `get radio` | Alias for `radio` **MeshCore** |
+| `get flood.max` | Show max flood hops **MeshCore** |
+| `get guest.password` | Show guest password **MeshCore** |
+| `get public.key` | Show public key (hex, serial only) **MeshCore** |
+| `get owner.info` / `set owner.info` | Show node owner info text **MeshCore** |
+| `get af` / `set af` | Show airtime/duty-cycle factor (tenths: 10=1.0x) **MeshCore** |
+| `get adc.multiplier` / `set adc.multiplier` | Show battery ADC calibration (tenths: 10=1.0x) **MeshCore** |
+| `get txdelay` / `set txdelay` | Show TX jitter delay factor (0-500, default 100) **MeshCore** |
+| `get rxdelay` / `set rxdelay` | Show RX delay factor (0-500, default 100) **MeshCore** |
+| `get direct.txdelay` / `set direct.txdelay` | Show direct TX delay factor (0-500, default 100) **MeshCore** |
+| `get agc.reset.interval` / `set agc.reset.interval` | Show AGC reset interval in seconds (0=disabled) **MeshCore** |
+| `get flood.advert.interval` / `set flood.advert.interval` | Show flood ADVERT interval in hours (0=auto) **MeshCore** |
 
 ### Legacy read-only aliases (still supported)
 
 | Legacy | New Equivalent |
 |--------|----------------|
-| `repeat` | `set repeat` |
-| `advert interval` | `set advert.interval` |
-| `txpower` | `set tx` |
-| `name` | `set name` |
+| `repeat` | `set repeat` / `get repeat` |
+| `advert interval` | `set advert.interval` / `get advert.interval` |
+| `txpower` | `set tx` / `get tx` |
+| `name` | `set name` / `get name` |
 
 ## Node Configuration
 
@@ -53,6 +72,14 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `set lon <longitude>` | Set longitude (decimal, e.g. `7.654321`), saves to EEPROM **MeshCore** |
 | `set repeat on\|off` | Enable/disable packet repeating |
 | `set flood.max <n>` | Set max flood hops (1-15) |
+| `set owner.info <text>` | Set node owner info (max 31 chars) **MeshCore** |
+| `set af <n>` | Set airtime factor (tenths: 0=off, 10=1.0x, max 90=9.0x) **MeshCore** |
+| `set adc.multiplier <n>` | Set battery ADC multiplier (tenths: 0=auto, 10=1.0x, max 100) **MeshCore** |
+| `set txdelay <n>` | Set TX jitter delay factor (0-500, default 100) **MeshCore** |
+| `set rxdelay <n>` | Set RX delay factor (0-500, default 100) **MeshCore** |
+| `set direct.txdelay <n>` | Set direct TX delay factor (0-500, default 100) **MeshCore** |
+| `set agc.reset.interval <sec>` | Set AGC reset interval (0=disabled, multiples of 4) **MeshCore** |
+| `set flood.advert.interval <hours>` | Set flood ADVERT interval (0=auto, 3-48h) **MeshCore** |
 | `mode 0\|1\|2` | Set power mode (0=performance, 1=balanced, 2=powersave) |
 | `powersaving on` | Set power save mode 2 (maximum savings) **MeshCore** |
 | `powersaving off` | Set power save mode 0 (performance) **MeshCore** |
@@ -71,13 +98,18 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 
 | Command | Description |
 |---------|-------------|
-| `radio` | Show current radio parameters |
+| `radio` / `get radio` | Show current radio parameters |
+| `get freq` | Show current frequency only **MeshCore** |
+| `set freq <MHz>` | Set frequency only (keeps other params), activates temp radio **MeshCore** |
 | `set radio <freq>,<bw>,<sf>,<cr>` | Set radio parameters (comma-separated, serial only) **MeshCore** |
+| `set radio <f>,<bw>,<sf>,<cr>,<min>` | Set radio with auto-revert timeout in minutes **MeshCore** |
 | `tempradio <freq> <bw> <sf> <cr>` | Set temporary radio params (space-separated, serial only) |
+| `tempradio <f> <bw> <sf> <cr> <min>` | Temp radio with auto-revert timeout in minutes **MeshCore** |
 | `tempradio off` | Restore default radio params |
 | `tempradio` | Show temp radio status |
 
 Example: `set radio 869.618,62.5,8,8` or `tempradio 869.618 62.5 8 8`
+Example with timeout: `set radio 869.618,62.5,8,8,30` (reverts after 30 minutes)
 
 ## TX Power
 
@@ -122,6 +154,8 @@ Example: `set radio 869.618,62.5,8,8` or `tempradio 869.618 62.5 8 8`
 | `password` | Show admin and guest passwords **MeshCore** |
 | `password <pwd>` | Set admin password (serial and remote) **MeshCore** |
 | `set guest.password <pwd>` | Set guest password **MeshCore** |
+| `get guest.password` | Show guest password **MeshCore** |
+| `setperm <pubkey> <perm>` | Set per-node ACL permission (0-255, serial only) **MeshCore** |
 
 ### Legacy password aliases (still supported)
 
@@ -221,7 +255,22 @@ Default limits: Login 5/min, Request 30/min, Forward 100/min.
 | `erase` | Reset configuration to factory defaults (alias of `reset`) **MeshCore** |
 | `reset` | Reset configuration to factory defaults |
 | `reboot` | Restart device |
+| `clkreboot` | Reset internal clock sync and reboot **MeshCore** |
 | `newid` | Generate new Ed25519 identity (serial only) |
+| `get prv.key` | Export Ed25519 private key seed (64 hex chars, serial only) **MeshCore** |
+| `set prv.key <hex>` | Import Ed25519 seed and regenerate identity (serial only) **MeshCore** |
+| `get public.key` | Show public key (hex, serial only) **MeshCore** |
+
+## Packet Log
+
+Requires `ENABLE_PACKET_LOG` compile flag.
+
+| Command | Description |
+|---------|-------------|
+| `log` | Show packet log count and recent entries |
+| `log start` | Enable packet logging (serial only) |
+| `log stop` | Disable packet logging (serial only) |
+| `log erase` | Clear packet log (serial only) |
 
 ## Serial-Only Commands
 
@@ -234,9 +283,15 @@ These commands are only available via USB serial console, not remotely:
 | `nodetype chat\|repeater` | Set node type |
 | `time <timestamp>` | Set Unix time |
 | `newid` | Generate new identity |
+| `get prv.key` | Export Ed25519 private key seed |
+| `set prv.key <hex>` | Import Ed25519 seed |
+| `get public.key` | Show public key hex |
+| `setperm <pubkey> <perm>` | Set per-node ACL permission |
 | `savestats` | Force save stats to EEPROM |
 | `tempradio ...` | Temporary radio parameters |
 | `set radio ...` | Set radio parameters |
+| `set freq <MHz>` | Set frequency only |
+| `log start\|stop\|erase` | Packet log control |
 | `alert test` | Send test alert |
 | `msg <name> <message>` | Send direct message to contact |
 
@@ -247,10 +302,19 @@ All shared commands are available remotely via the MeshCore app's encrypted CLI 
 ### Guest-allowed commands (read-only)
 
 ```
-status  stats  ver  clock  time  lifetime  radiostats  packetstats
+status  stats  stats-core  stats-radio  stats-packets
+ver  board  clock  time  lifetime  radiostats  packetstats
 telemetry  identity  location  nodes  neighbours  health  mailbox
-power  powersaving  radio  rssi  acl  quiet  cb
+power  powersaving  radio  rssi  acl  quiet  cb  log
+get name  get lat  get lon  get tx  get radio  get freq
+get repeat  get flood.max  get advert.interval  get guest.password
+get owner.info  get af  get adc.multiplier  get txdelay
+get rxdelay  get direct.txdelay  get agc.reset.interval
+get flood.advert.interval
 set repeat  set advert.interval  set tx  set name
+set owner.info  set af  set adc.multiplier  set txdelay
+set rxdelay  set direct.txdelay  set agc.reset.interval
+set flood.advert.interval
 alert  ratelimit  sleep  rxboost  help
 ```
 
@@ -260,6 +324,9 @@ alert  ratelimit  sleep  rxboost  help
 set name <X>  set lat <X>  set lon <X>
 set repeat on/off  set flood.max <N>
 set advert.interval <min>  set tx <dBm>  set tx auto on/off
+set owner.info <text>  set af <N>  set adc.multiplier <N>
+set txdelay <N>  set rxdelay <N>  set direct.txdelay <N>
+set agc.reset.interval <sec>  set flood.advert.interval <hours>
 password <pwd>  set guest.password <pwd>
 powersaving on/off  mode 0/1/2
 sleep on/off  rxboost on/off
@@ -268,7 +335,7 @@ alert on/off/dest/clear  mailbox clear
 quiet <start> <end>  quiet off
 ratelimit on/off/reset  clear stats  neighbor.remove <hex>
 report on/off/dest/time/test/nodes
-save  erase  reset  reboot
+save  erase  reset  reboot  clkreboot
 ```
 
 ## Radio Settings (EU868 default)
@@ -294,3 +361,7 @@ save  erase  reset  reboot
 8. Enable `alert on` to get automatic notifications when nodes go offline
 9. The `mailbox` stores messages for offline nodes automatically - no config needed
 10. Use `tempradio` to test radio parameters without persisting, `set radio` to apply
+11. Use `get prv.key` to backup your identity seed before flashing new firmware
+12. Use `set af` to adjust duty cycle (0=off, 10=1.0x, 20=2.0x slower)
+13. Use `set agc.reset.interval 60` to reset receiver gain every 60 seconds
+14. Use `tempradio 869.618 62.5 8 8 30` to auto-revert radio params after 30 minutes
