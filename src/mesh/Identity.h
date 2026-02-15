@@ -226,6 +226,13 @@ public:
     }
 
     /**
+     * Import identity from 32-byte seed (regenerates keypair, preserves name/location)
+     */
+    void importSeed(const uint8_t* seed) {
+        ed25519_create_keypair(identity.publicKey, identity.privateKey, seed);
+    }
+
+    /**
      * Get node name
      */
     const char* getNodeName() const {

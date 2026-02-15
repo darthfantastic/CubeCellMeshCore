@@ -688,6 +688,24 @@ void processCommand(char* cmd) {
         nodeIdentity.reset();
         LOG_RAW("New: %s %02X - reboot\n\r", nodeIdentity.getNodeName(), nodeIdentity.getNodeHash());
     }
+    else if (strcmp(cmd, "get prv.key") == 0) {
+        const uint8_t* pk = nodeIdentity.getPrivateKey();
+        for (int i = 0; i < MC_PRIVATE_KEY_SIZE; i++) LOG_RAW("%02x", pk[i]);
+        LOG_RAW("\n\r");
+    }
+    else if (strncmp(cmd, "set prv.key ", 12) == 0) {
+        const char* hex = cmd + 12;
+        if (strlen(hex) == 64) {
+            uint8_t seed[32];
+            for (int i = 0; i < 32; i++) {
+                char b[3] = {hex[i*2], hex[i*2+1], 0};
+                seed[i] = (uint8_t)strtoul(b, NULL, 16);
+            }
+            nodeIdentity.importSeed(seed);
+            nodeIdentity.save();
+            LOG_RAW("Key set %02X - reboot\n\r", nodeIdentity.getNodeHash());
+        } else LOG_RAW("E:64 hex chars (32-byte seed)\n\r");
+    }
     #ifdef ENABLE_CRYPTO_TESTS
     else if (strcmp(cmd, "test") == 0) {
         const uint8_t pubkey[] = {
