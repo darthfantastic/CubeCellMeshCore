@@ -30,6 +30,7 @@ class NodeConfig:
     rx_boost_enabled: bool = False
     max_flood_hops: int = 8
     repeat_enabled: bool = True
+    power_save_mode: int = 1
 
 
 @dataclass

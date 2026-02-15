@@ -370,6 +370,24 @@ public:
     }
 
     /**
+     * Remove neighbor matching pubkey prefix
+     * @param prefix Bytes to match against pubKeyPrefix
+     * @param len Number of prefix bytes to compare (1-6)
+     * @return true if found and removed
+     */
+    bool removeByPrefix(const uint8_t* prefix, uint8_t len) {
+        if (len > 6) len = 6;
+        for (int i = 0; i < MAX_NEIGHBOURS; i++) {
+            if (neighbours[i].valid &&
+                memcmp(neighbours[i].pubKeyPrefix, prefix, len) == 0) {
+                neighbours[i].clear();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Serialize neighbors list for response (MeshCore format)
      * Format per entry: pubkey_prefix + seconds_since_heard (4 bytes) + snr (1 byte)
      * @param buf Output buffer

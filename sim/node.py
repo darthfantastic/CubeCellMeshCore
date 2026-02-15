@@ -538,6 +538,28 @@ class SimRepeater(SimNode):
             return self._cmd_status()
         elif command == "stats":
             return self._cmd_stats()
+        elif command == "ver":
+            return "sim-0.4.0"
+        elif command == "clock" or (command == "time" and len(parts) == 1):
+            if self.time_sync.is_synchronized():
+                return f"T:{self.time_sync.get_timestamp()} sync"
+            return "T:nosync"
+        elif command == "powersaving" and len(parts) == 1:
+            return f"PS:{self.config.power_save_mode}"
+        elif cmd == "powersaving on":
+            self.config.power_save_mode = 2
+            return "PS:2"
+        elif cmd == "powersaving off":
+            self.config.power_save_mode = 0
+            return "PS:0"
+        elif cmd == "clear stats":
+            self.stats.rx_count = 0
+            self.stats.tx_count = 0
+            self.stats.fwd_count = 0
+            self.stats.err_count = 0
+            self.stats.adv_tx_count = 0
+            self.stats.adv_rx_count = 0
+            return "stats clr"
         elif command == "nodes":
             return self._cmd_nodes()
         elif command == "ping" and len(parts) > 1:
@@ -548,7 +570,8 @@ class SimRepeater(SimNode):
             self.send_advert(True)
             return f"{TAG_ADVERT} sent"
         elif command == "help":
-            return "status stats nodes ping <hash> trace <hash> advert help"
+            return ("status stats ver clock nodes ping <hash> trace <hash> "
+                    "advert powersaving clear stats help")
         else:
             return f"Unknown: {cmd}"
 
@@ -655,7 +678,13 @@ class SimCompanion(SimNode):
             return f"{TAG_ADVERT} sent"
         elif command == "status":
             return f"{self.identity.name} {self.identity.hash:02X} (companion)"
+        elif command == "ver":
+            return "sim-0.4.0"
+        elif command == "clock" or (command == "time" and len(parts) == 1):
+            if self.time_sync.is_synchronized():
+                return f"T:{self.time_sync.get_timestamp()} sync"
+            return "T:nosync"
         elif command == "help":
-            return "status ping <hash> trace <hash> advert help"
+            return "status ver clock ping <hash> trace <hash> advert help"
         else:
             return f"Unknown: {cmd}"
