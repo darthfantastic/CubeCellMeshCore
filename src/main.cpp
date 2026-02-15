@@ -378,6 +378,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "set direct.txdelay") == 0 || strcmp(cmd, "get direct.txdelay") == 0) {
         CP("direct.txdelay:%d\n", configDirectTxDelay);
     }
+    else if (strcmp(cmd, "set af") == 0 || strcmp(cmd, "get af") == 0) {
+        CP("af:%d.%d\n", configAirtimeFactor / 10, configAirtimeFactor % 10);
+    }
     else if (strcmp(cmd, "set flood.advert.interval") == 0 || strcmp(cmd, "get flood.advert.interval") == 0) {
         CP("flood.adv.int:%luh\n", floodAdvertIntervalMs > 0 ? floodAdvertIntervalMs / 3600000UL : 0);
     }
@@ -639,6 +642,17 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         if (hours == 0) { floodAdvertIntervalMs = 0; CP("flood.adv.int:auto\n"); }
         else if (hours >= 3 && hours <= 48) { floodAdvertIntervalMs = hours * 3600000UL; CP("flood.adv.int:%luh\n", hours); }
         else CP("E:0,3-48\n");
+    }
+    else if (strncmp(cmd, "set af ", 7) == 0) {
+        // Parse "X.Y" as tenths (e.g. "1.5" -> 15)
+        const char* s = cmd + 7;
+        uint8_t whole = (uint8_t)atoi(s);
+        uint8_t frac = 0;
+        const char* dot = strchr(s, '.');
+        if (dot && dot[1] >= '0' && dot[1] <= '9') frac = dot[1] - '0';
+        uint8_t val = whole * 10 + frac;
+        if (val <= 90) { configAirtimeFactor = val; CP("af:%d.%d\n", val / 10, val % 10); }
+        else CP("E:0.0-9.0\n");
     }
     else if (strncmp(cmd, "set owner.info ", 15) == 0) {
         const char* txt = cmd + 15;
@@ -3172,6 +3186,10 @@ void loop() {
                 uint8_t score = calcSnrScore(pkt.snr);
                 txDelay = MC_TX_DELAY_MIN + calcRxDelay(score, airtime) * configRxDelayFactor / 100
                         + calcTxJitter(airtime) * configTxDelayFactor / 100;
+            }
+            // Apply airtime factor (tenths: 10=1.0x)
+            if (configAirtimeFactor != 10 && configAirtimeFactor > 0) {
+                txDelay = txDelay * configAirtimeFactor / 10;
             }
             LOG(TAG_TX " Wait %lums\n\r", txDelay);
 
