@@ -50,6 +50,7 @@ float tempFrequency = 0;
 float tempBandwidth = 0;
 uint8_t tempSpreadingFactor = 0;
 uint8_t tempCodingRate = 0;
+uint32_t tempRadioExpireTime = 0;
 
 //=============================================================================
 // Power saving

@@ -71,6 +71,7 @@ extern float tempFrequency;         // MHz
 extern float tempBandwidth;         // kHz
 extern uint8_t tempSpreadingFactor; // 6-12
 extern uint8_t tempCodingRate;      // 5-8 (for 4/5 to 4/8)
+extern uint32_t tempRadioExpireTime; // millis() when temp radio auto-expires (0=never)
 
 //=============================================================================
 // Power saving
