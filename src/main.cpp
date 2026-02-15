@@ -373,6 +373,21 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "set flood.advert.interval") == 0 || strcmp(cmd, "get flood.advert.interval") == 0) {
         CP("flood.adv.int:%luh\n", floodAdvertIntervalMs > 0 ? floodAdvertIntervalMs / 3600000UL : 0);
     }
+#ifdef ENABLE_PACKET_LOG
+    else if (strcmp(cmd, "log") == 0) {
+        CP("Log:%s N:%lu/%d\n", packetLogger.isEnabled() ? "on" : "off",
+            packetLogger.getTotalLogged(), packetLogger.getCount());
+        uint8_t show = packetLogger.getCount();
+        if (show > 8) show = 8;
+        for (uint8_t i = 0; i < show; i++) {
+            if (ctx.buf && ctx.len >= ctx.maxLen - 32) break;
+            const PacketLogEntry* e = packetLogger.getEntry(i);
+            if (e) CP(" %s r%d t%d %02X>%02X s%d\n",
+                e->direction ? "TX" : "RX", e->routeType, e->payloadType,
+                e->srcHash, e->dstHash, e->snr);
+        }
+    }
+#endif
     // --- Admin-only commands ---
     else if (!isAdmin) {
         return false;  // not a read-only command; caller handles admin gate
@@ -755,6 +770,17 @@ void processCommand(char* cmd) {
     else if (strcmp(cmd, "savestats") == 0) {
         savePersistentStats(); LOG_RAW("Stats saved\n\r");
     }
+#ifdef ENABLE_PACKET_LOG
+    else if (strcmp(cmd, "log start") == 0) {
+        packetLogger.setEnabled(true); LOG_RAW("Log:on\n\r");
+    }
+    else if (strcmp(cmd, "log stop") == 0) {
+        packetLogger.setEnabled(false); LOG_RAW("Log:off\n\r");
+    }
+    else if (strcmp(cmd, "log erase") == 0) {
+        packetLogger.clear(); LOG_RAW("Log erased\n\r");
+    }
+#endif
     else if (strcmp(cmd, "contacts") == 0) {
         LOG_RAW("Contacts: %d\n\r", contactMgr.getCount());
         for (uint8_t i = 0; i < contactMgr.getCount(); i++) {
