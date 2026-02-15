@@ -625,6 +625,33 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP(removed ? "nbr rm\n" : "E:not found\n");
         } else CP("E:hex prefix\n");
     }
+    else if (strncmp(cmd, "setperm ", 8) == 0) {
+        // setperm <pubkey_hex> <0-3> or setperm <pubkey_hex> (remove)
+        char* args = (char*)(cmd + 8);
+        char* space = strchr(args, ' ');
+        if (space) {
+            *space = '\0';
+            uint8_t perm = (uint8_t)atoi(space + 1);
+            if (perm <= 3 && strlen(args) >= 12) {
+                uint8_t pk[6];
+                for (int i = 0; i < 6; i++) {
+                    char b[3] = {args[i*2], args[i*2+1], 0};
+                    pk[i] = (uint8_t)strtoul(b, NULL, 16);
+                }
+                repeaterHelper.getACL().setPermission(pk, perm);
+                CP("perm:%02X%02X%02X=%d\n", pk[0], pk[1], pk[2], perm);
+            } else CP("E:setperm <12+hex> <0-3>\n");
+        } else if (strlen(args) >= 12) {
+            // Remove permission
+            uint8_t pk[6];
+            for (int i = 0; i < 6; i++) {
+                char b[3] = {args[i*2], args[i*2+1], 0};
+                pk[i] = (uint8_t)strtoul(b, NULL, 16);
+            }
+            bool ok = repeaterHelper.getACL().removeEntry(pk);
+            CP(ok ? "perm rm\n" : "E:not found\n");
+        } else CP("E:setperm <12+hex> [0-3]\n");
+    }
     else if (strncmp(cmd, "set txdelay ", 12) == 0) {
         uint16_t v = (uint16_t)atoi(cmd + 12);
         if (v <= 500) { configTxDelayFactor = v; CP("txdelay:%d\n", v); }

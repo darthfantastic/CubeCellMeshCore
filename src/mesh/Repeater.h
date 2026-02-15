@@ -550,6 +550,15 @@ public:
     }
 
     /**
+     * Set permission for a pubkey (public interface for setperm CLI)
+     * @param pubKey Public key (first 6 bytes used as prefix)
+     * @param permissions Permission level (PERM_ACL_*)
+     */
+    void setPermission(const uint8_t* pubKey, uint8_t permissions) {
+        addOrUpdateEntry(pubKey, permissions, millis() / 1000);
+    }
+
+    /**
      * Remove entry by pubkey prefix
      */
     bool removeEntry(const uint8_t* pubKeyPrefix) {
