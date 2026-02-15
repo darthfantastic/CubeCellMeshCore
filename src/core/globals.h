@@ -82,6 +82,7 @@ extern uint16_t configTxDelayFactor;     // TX jitter factor (0-500, default 100
 extern uint16_t configRxDelayFactor;     // RX delay factor (0-500, default 100)
 extern uint16_t configDirectTxDelay;     // Direct TX delay factor (0-500, default 100)
 extern uint8_t configAirtimeFactor;      // Airtime/duty cycle factor (tenths: 10=1.0x, 0=off, max 90=9.0)
+extern uint8_t configAdcMultiplier;      // Battery ADC calibration (tenths: 10=1.0x, 0=auto, max 100=10.0)
 
 //=============================================================================
 // Power saving

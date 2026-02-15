@@ -117,6 +117,11 @@ public:
         } else {
             data.batteryMv = 0;
         }
+        // Apply ADC multiplier if set (tenths: 10=1.0x, 0=auto/skip)
+        extern uint8_t configAdcMultiplier;
+        if (configAdcMultiplier > 0 && configAdcMultiplier != 10) {
+            data.batteryMv = (uint16_t)((uint32_t)data.batteryMv * configAdcMultiplier / 10);
+        }
         #else
         data.batteryMv = 0;
         #endif

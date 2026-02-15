@@ -61,6 +61,7 @@ uint16_t configTxDelayFactor = 100;
 uint16_t configRxDelayFactor = 100;
 uint16_t configDirectTxDelay = 100;
 uint8_t configAirtimeFactor = 10;    // 1.0x default
+uint8_t configAdcMultiplier = 0;    // 0=auto (use hardware calibration)
 
 //=============================================================================
 // Power saving

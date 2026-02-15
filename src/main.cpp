@@ -381,6 +381,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "set af") == 0 || strcmp(cmd, "get af") == 0) {
         CP("af:%d.%d\n", configAirtimeFactor / 10, configAirtimeFactor % 10);
     }
+    else if (strcmp(cmd, "set adc.multiplier") == 0 || strcmp(cmd, "get adc.multiplier") == 0) {
+        CP("adc.mul:%d.%d\n", configAdcMultiplier / 10, configAdcMultiplier % 10);
+    }
     else if (strcmp(cmd, "set flood.advert.interval") == 0 || strcmp(cmd, "get flood.advert.interval") == 0) {
         CP("flood.adv.int:%luh\n", floodAdvertIntervalMs > 0 ? floodAdvertIntervalMs / 3600000UL : 0);
     }
@@ -653,6 +656,16 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         uint8_t val = whole * 10 + frac;
         if (val <= 90) { configAirtimeFactor = val; CP("af:%d.%d\n", val / 10, val % 10); }
         else CP("E:0.0-9.0\n");
+    }
+    else if (strncmp(cmd, "set adc.multiplier ", 19) == 0) {
+        const char* s = cmd + 19;
+        uint8_t whole = (uint8_t)atoi(s);
+        uint8_t frac = 0;
+        const char* dot = strchr(s, '.');
+        if (dot && dot[1] >= '0' && dot[1] <= '9') frac = dot[1] - '0';
+        uint8_t val = whole * 10 + frac;
+        if (val <= 100) { configAdcMultiplier = val; CP("adc.mul:%d.%d\n", val / 10, val % 10); }
+        else CP("E:0.0-10.0\n");
     }
     else if (strncmp(cmd, "set owner.info ", 15) == 0) {
         const char* txt = cmd + 15;
