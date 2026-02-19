@@ -54,7 +54,7 @@
 #define ADAPTIVE_TX_STEP            2        // dBm per step
 #define ADAPTIVE_TX_MIN_POWER       5        // dBm floor
 #ifndef MC_TX_POWER
-#define MC_TX_POWER                 14       // default EU, overridden by main.h
+#define MC_TX_POWER                 21       // default max HTCC-AB01, overridden by main.h
 #endif
 
 // Default passwords

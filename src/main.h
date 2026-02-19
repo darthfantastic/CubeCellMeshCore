@@ -44,7 +44,7 @@
     #define MC_BANDWIDTH        62.5f       // kHz (narrow)
     #define MC_SPREADING        8           // SF8
     #define MC_CODING_RATE      8           // 4/8
-    #define MC_TX_POWER         14          // dBm (EU limit)
+    #define MC_TX_POWER         21          // dBm (max HTCC-AB01 hardware)
     #define MC_PREAMBLE_LEN     16
 #endif
 
@@ -53,7 +53,7 @@
     #define MC_BANDWIDTH        62.5f       // kHz (narrow)
     #define MC_SPREADING        7           // SF7
     #define MC_CODING_RATE      5           // 4/5
-    #define MC_TX_POWER         20          // dBm
+    #define MC_TX_POWER         21          // dBm (max HTCC-AB01 hardware)
     #define MC_PREAMBLE_LEN     16
 #endif
 
@@ -61,7 +61,7 @@
     #define MC_FREQUENCY        916.525f    // MHz
     #define MC_BANDWIDTH        62.5f       // kHz (narrow)
     #define MC_CODING_RATE      5           // 4/5
-    #define MC_TX_POWER         20          // dBm
+    #define MC_TX_POWER         21          // dBm (max HTCC-AB01 hardware)
     #define MC_PREAMBLE_LEN     16
 #endif
 
