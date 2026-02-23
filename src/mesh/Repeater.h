@@ -989,10 +989,9 @@ public:
         buf[pos++] = 0;
         buf[pos++] = 0;
 
-        // last_snr (int16_t) - MeshCore uses SNR * 4
-        int16_t snr4 = snr * 4;
-        buf[pos++] = snr4 & 0xFF;
-        buf[pos++] = (snr4 >> 8) & 0xFF;
+        // last_snr (int16_t) - snr is already in SNR*4 units
+        buf[pos++] = snr & 0xFF;
+        buf[pos++] = (snr >> 8) & 0xFF;
 
         // n_direct_dups (uint16_t)
         buf[pos++] = 0;

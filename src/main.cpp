@@ -177,9 +177,9 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
                     uint32_t ts = timeSync.getTimestamp() - ago;
                     TimeSync::DateTime dt;
                     TimeSync::timestampToDateTime(ts, dt);
-                    CP("%02X %s %ddBm s:%d p:%d %02d/%02d %02d:%02d\n", n->hash, n->name[0]?n->name:"-", n->lastRssi, n->lastSnr, n->pktCount, dt.day, dt.month, dt.hour, dt.minute);
+                    CP("%02X %s %ddBm s:%d.%ddB p:%d %02d/%02d %02d:%02d\n", n->hash, n->name[0]?n->name:"-", n->lastRssi, n->lastSnr/4, abs(n->lastSnr%4)*25, n->pktCount, dt.day, dt.month, dt.hour, dt.minute);
                 } else {
-                    CP("%02X %s %ddBm s:%d p:%d %lus\n", n->hash, n->name[0]?n->name:"-", n->lastRssi, n->lastSnr, n->pktCount, ago);
+                    CP("%02X %s %ddBm s:%d.%ddB p:%d %lus\n", n->hash, n->name[0]?n->name:"-", n->lastRssi, n->lastSnr/4, abs(n->lastSnr%4)*25, n->pktCount, ago);
                 }
             }
         }
@@ -193,10 +193,10 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
                 const NeighbourInfo* n = nb.getNeighbour(i);
                 if (n) {
                     uint32_t ago = (millis() - n->lastHeard) / 1000;
-                    CP(" %02X%02X%02X%02X%02X%02X rssi=%d snr=%d ago=%lus\n",
+                    CP(" %02X%02X%02X%02X%02X%02X rssi=%d snr=%d.%ddB ago=%lus\n",
                         n->pubKeyPrefix[0], n->pubKeyPrefix[1], n->pubKeyPrefix[2],
                         n->pubKeyPrefix[3], n->pubKeyPrefix[4], n->pubKeyPrefix[5],
-                        n->rssi, n->snr, ago);
+                        n->rssi, n->snr/4, abs(n->snr%4)*25, ago);
                 }
             }
         }
