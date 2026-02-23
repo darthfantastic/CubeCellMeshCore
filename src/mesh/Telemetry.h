@@ -90,33 +90,13 @@ public:
     }
 
     /**
-     * Read battery voltage.
-     * Framework 1.6.0 bugs: analogReadmV()/getBatteryVoltage() broken
-     * (ch3 calibration not initialized).
-     * Workaround: analogRead() + ch0 calibration + VBAT_ADC_CTL.
+     * Read battery voltage using framework getBatteryVoltage().
+     * Uses analogReadmV() with 50-sample averaging + VBAT_ADC_CTL.
      */
     void readBattery() {
         #ifdef CUBECELL
-        extern volatile int16 ADC_SAR_Seq_offset[];
-        extern volatile int32 ADC_SAR_Seq_countsPer10Volt[];
-
-        // Enable VBAT measurement circuit
-        pinMode(VBAT_ADC_CTL, OUTPUT);
-        digitalWrite(VBAT_ADC_CTL, LOW);
-        delay(100);
-
-        uint16_t counts = analogRead(ADC);
-
-        pinMode(VBAT_ADC_CTL, INPUT);
-
-        // Convert using ch0 calibration, apply x2 voltage divider
-        int32_t gain = ADC_SAR_Seq_countsPer10Volt[0];
-        if (gain != 0) {
-            int32_t adj = (int32_t)counts - ADC_SAR_Seq_offset[0];
-            data.batteryMv = (uint16_t)((adj * 20000L) / gain);
-        } else {
-            data.batteryMv = 0;
-        }
+        extern uint16_t getBatteryVoltage(void);
+        data.batteryMv = getBatteryVoltage();
         // Apply ADC multiplier if set (tenths: 10=1.0x, 0=auto/skip)
         extern uint8_t configAdcMultiplier;
         if (configAdcMultiplier > 0 && configAdcMultiplier != 10) {
