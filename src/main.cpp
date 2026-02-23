@@ -188,16 +188,23 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         NeighbourTracker& nb = repeaterHelper.getNeighbours();
         uint8_t cnt = nb.getCount();
         CP("Nbr:%d\n", cnt);
-        if (!ctx.buf) {
-            for (uint8_t i = 0; i < cnt; i++) {
-                const NeighbourInfo* n = nb.getNeighbour(i);
-                if (n) {
-                    uint32_t ago = (millis() - n->lastHeard) / 1000;
-                    CP(" %02X%02X%02X%02X%02X%02X rssi=%d snr=%d.%ddB ago=%lus\n",
-                        n->pubKeyPrefix[0], n->pubKeyPrefix[1], n->pubKeyPrefix[2],
-                        n->pubKeyPrefix[3], n->pubKeyPrefix[4], n->pubKeyPrefix[5],
-                        n->rssi, n->snr/4, abs(n->snr%4)*25, ago);
+        for (uint8_t i = 0; i < cnt; i++) {
+            const NeighbourInfo* n = nb.getNeighbour(i);
+            if (n) {
+                if (ctx.buf && ctx.len >= ctx.maxLen - 48) break;
+                uint32_t ago = (millis() - n->lastHeard) / 1000;
+                // Resolve name from SeenNodesTracker via hash (pubKeyPrefix[0])
+                const char* name = "-";
+                for (uint8_t j = 0; j < seenNodes.getCount(); j++) {
+                    const SeenNode* sn = seenNodes.getNode(j);
+                    if (sn && sn->hash == n->pubKeyPrefix[0] && sn->name[0]) {
+                        name = sn->name; break;
+                    }
                 }
+                const char* cb = n->cbState == 0 ? "ok" : (n->cbState == 1 ? "OPEN" : "half");
+                CP(" %02X %s %ddBm s:%d.%ddB cb:%s %lus\n",
+                    n->pubKeyPrefix[0], name,
+                    n->rssi, n->snr/4, abs(n->snr%4)*25, cb, ago);
             }
         }
     }
