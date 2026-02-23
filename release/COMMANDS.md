@@ -1,4 +1,4 @@
-# CubeCellMeshCore v0.5.2 - Command Reference
+# CubeCellMeshCore v0.5.3 - Command Reference
 
 Serial console at 115200 baud. Type `help` for command list.
 
