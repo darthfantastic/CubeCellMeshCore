@@ -81,7 +81,15 @@ MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 
 See `INSTALL.md` for detailed instructions.
 
+## Author
+
+**Andrea Bernardi** - Project creator and lead developer
+
 ## Links
 
 - Source: https://github.com/atomozero/CubeCellMeshCore
 - MeshCore: https://github.com/meshcore-dev/MeshCore
+
+## License
+
+MIT License - See LICENSE file for details.

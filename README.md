@@ -183,6 +183,10 @@ Commands:
 - [RadioLib](https://github.com/jgromes/RadioLib) v6.6.0
 - [Crypto](https://github.com/rweather/arduinolibs) v0.4.0
 
+## Author
+
+**Andrea Bernardi** - Project creator and lead developer
+
 ## License
 
 MIT License - See LICENSE file for details.

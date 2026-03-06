@@ -272,5 +272,10 @@ Tutte le modifiche sono **pronte per l'uso** e **completamente testate**.
 
 ---
 
+## Autore
+
+**Andrea Bernardi** - Creatore del progetto CubeCellMeshCore
+
 ## Note di Sviluppo
+
 Implementazione completata il 2026-03-06

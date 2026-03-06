@@ -1,4 +1,4 @@
-# CubeCellMeshCore v0.5.0 - Installation Guide
+# CubeCellMeshCore v0.7.0 - Installation Guide
 
 ## Requirements
 

@@ -157,6 +157,10 @@ This project aims to be:
 - Check the [MeshCore Discord](https://discord.gg/meshcore) for protocol questions
 - Review the [MeshCore documentation](https://github.com/meshcore-dev/MeshCore)
 
+## Author
+
+**Andrea Bernardi** - Project creator and lead developer
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.

@@ -1,16 +1,34 @@
-# CubeCellMeshCore v0.5.0
+# CubeCellMeshCore v0.7.0
 
 Firmware par repeater MeshCore par el Heltec CubeCell HTCC-AB01.
 
-## Cossa ghe xe de novo ne la v0.5.0
+## Cossa ghe xe de novo ne la v0.7.0
 
-- **Routing DIRECT** - Suporto completo par i pacchetti co rotta DIRECT (path peeling). Prima el repeater el inoltrava solo pacchetti FLOOD, desso anca i messaggi direti tra companion i passa.
-- **Casseta de Posta (Mailbox)** - I messagi par i nodi che no xe in linea i vien salvai e riconsegnai in automatico. 2 posti in EEPROM + 4 in RAM. Deduplicassion par no salvar el stesso paco da piu' repeater.
-- **Dashboard Salute del Sistema** - El comando `health` el mostra vitali (uptime, bateria, sync), stato rete (online/offline), sotosistemi (mailbox, rate limit, errori), e segnala solo i nodi problematici.
-- **Configurassion Remota Completa** - Tuti i 50+ comandi CLI i xe disponibili da remoto tramite el canal cifra' de la app MeshCore. No serve piu' el cavo USB.
-- **Sicuressa de le Sessioni** - Le sessioni inative le scade dopo 1 ora.
-- **Prevension dei Loop** - El forwarding FLOOD el controla se el nostro hash el xe za nel path par evitar loop de routing.
-- **Otimizassion del Codice** - Unio i handler CLI duplicai e eliminao el parsing float. Risparmiado 12.9 KB de Flash (prima 98.2%, desso 91.0%).
+- **Statistiche Link Quality Miorae** - Medie mobili esponensiali (EMA) de RSSI/SNR par ogni visìn
+  - Nove metriche: `rssiAvg`, `snrAvg`, `pktCount`, `pktCountWindow`
+  - Finestre de misurassion de 60 secondi par calcolar el packet rate
+  - Comando `neighbours` el mostra valori corenti e medi
+  - Base par futuri algoritmi de routing inteligenti
+- **Potensa TX Adativa** - Regolassion automatica de la potensa de trasmission
+  - SNR > +10dB → Riduce potensa de 2 dBm (risparmio energia)
+  - SNR < -5dB → Aumenta potensa de 2 dBm (mior copertura)
+  - Range: 5-21 dBm con step de 2 dBm
+  - Comandi: `set tx auto on/off`, `txpower auto on/off`, `txpower <5-21>`
+- **Deduplicassion Pacheti** - Documentà cache ring-buffer a 32 slot
+  - Previen inoltro de pacheti duplicai
+  - Riduce congestione de la rete e previen loop
+- **Suite de Test** - Novo script de verifica `tools/test_adaptive_tx.py`
+
+## Funzionalità Precedenti (v0.5.0-v0.6.0)
+
+- **Routing DIRECT** - Suporto completo par pacheti co rotta DIRECT (path peeling)
+- **Casseta de Posta (Mailbox)** - 2 posti EEPROM + 4 in RAM
+- **Dashboard Salute** - Comando `health` co vitali e nodi problematici
+- **Configurassion Remota** - 50+ comandi CLI via canal cifra'
+- **Sistema Loop Detection** - Modi configurabili: off, minimal, moderate, strict
+- **Filtro Max Hops** - Auto-add contati limitai par hop count
+- **Quiet Hours** - Rate limiting noturno par risparmiar bateria
+- **Circuit Breaker** - Bloca DIRECT forwarding a visìn degradai
 
 ## Caratteristiche
 
@@ -57,10 +75,18 @@ Firmware par repeater MeshCore par el Heltec CubeCell HTCC-AB01.
 
 Varda `INSTALL.md` par le istrussioni detajae.
 
+## Autor
+
+**Andrea Bernardi** - Creador del projeto e svilupador prinsipal
+
 ## Link
 
 - Sorgenti: https://github.com/atomozero/CubeCellMeshCore
 - MeshCore: https://github.com/meshcore-dev/MeshCore
+
+## Licensa
+
+Licensa MIT - Varda el file LICENSE par i detagli.
 
 ---
 *Fato col cuor a Venessia* 🦁
