@@ -20,19 +20,12 @@
 #define EEPROM_MAGIC        0xCC3C
 #endif
 #ifndef EEPROM_VERSION
-#define EEPROM_VERSION      5
+#define EEPROM_VERSION      6
 #endif
 #ifndef CONFIG_PASSWORD_LEN
 #define CONFIG_PASSWORD_LEN 16
 #endif
 
-// Region & Scope support (MeshCore 1.10.0+)
-#ifndef MC_MAX_REGIONS
-#define MC_MAX_REGIONS      8
-#endif
-#ifndef MC_REGION_LEN
-#define MC_REGION_LEN       8
-#endif
 
 //=============================================================================
 // Loop Detection Modes
@@ -63,10 +56,7 @@ struct NodeConfig {
     uint8_t alertDestPubKey[REPORT_PUBKEY_SIZE];
     uint8_t loopDetectMode;   // 0=off, 1=minimal, 2=moderate, 3=strict
     uint8_t autoAddMaxHops;   // 0=no limit, 1-64=max hops for auto-add contacts
-    // Region & Scope support (v5) - MeshCore 1.10.0+
-    uint8_t regionCount;      // Number of configured regions (0-8)
-    char regions[MC_MAX_REGIONS][MC_REGION_LEN]; // Region codes (e.g., "us", "us-co", "*")
-    uint8_t reserved[1];      // Reserved for future use (was 2, now 1)
+    uint8_t reserved[4];      // Reserved for future use
 };
 #endif
 
