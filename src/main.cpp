@@ -470,6 +470,19 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP("E:off|minimal|moderate|strict\n");
         }
     }
+    else if (strcmp(cmd, "get autoadd.maxhops") == 0) {
+        CP("> %d\n", autoAddMaxHops);
+    }
+    else if (strncmp(cmd, "set autoadd.maxhops ", 20) == 0) {
+        int hops = atoi(cmd + 20);
+        if (hops >= 0 && hops <= 64) {
+            autoAddMaxHops = (uint8_t)hops;
+            saveConfig();
+            CP("autoadd.maxhops=%d\n", autoAddMaxHops);
+        } else {
+            CP("E:0-64\n");
+        }
+    }
     else if (strncmp(cmd, "set name ", 9) == 0) {
         const char* n = cmd + 9;
         if (strlen(n) > 0 && strlen(n) < 16) {
@@ -3027,8 +3040,13 @@ void processReceivedPacket(MCPacket* pkt) {
             }
 
             // Add to contact manager (stores full public key for messaging)
+            // Filter by hop count if autoAddMaxHops is set (0 = no limit)
             const uint8_t* pubKey = &pkt->payload[ADVERT_PUBKEY_OFFSET];
-            contactMgr.updateFromAdvert(pubKey, advInfo.name, pkt->rssi, pkt->snr);
+            if (autoAddMaxHops == 0 || pkt->pathLen <= autoAddMaxHops) {
+                contactMgr.updateFromAdvert(pubKey, advInfo.name, pkt->rssi, pkt->snr);
+            } else {
+                LOG(TAG_INFO " Skip contact (hops=%d > max=%d)\n\r", pkt->pathLen, autoAddMaxHops);
+            }
 
             // Store-and-forward: deliver pending messages for this node
             if (mailbox.countFor(advInfo.pubKeyHash) > 0) {

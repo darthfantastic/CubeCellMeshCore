@@ -31,6 +31,7 @@ const NodeConfig defaultConfig = {
     false,  // alertEnabled
     {0},    // alertDestPubKey (empty)
     LOOP_DETECT_STRICT,  // loopDetectMode (default: strict for backward compat)
+    0,      // autoAddMaxHops (default: no limit)
     {0}     // reserved
 };
 
@@ -70,10 +71,15 @@ void loadConfig() {
         loopDetectMode = config.loopDetectMode;
         if (loopDetectMode > LOOP_DETECT_STRICT) loopDetectMode = LOOP_DETECT_STRICT;
 
-        CONFIG_LOG("[C] Loaded (report=%s, alert=%s, loopDetect=%d)\n\r",
+        // Load auto-add max hops
+        autoAddMaxHops = config.autoAddMaxHops;
+        if (autoAddMaxHops > 64) autoAddMaxHops = 64;
+
+        CONFIG_LOG("[C] Loaded (report=%s, alert=%s, loopDetect=%d, autoAddMaxHops=%d)\n\r",
             reportEnabled ? "on" : "off",
             alertEnabled ? "on" : "off",
-            loopDetectMode);
+            loopDetectMode,
+            autoAddMaxHops);
     } else {
         // First boot or version mismatch - use defaults
         powerSaveMode = defaultConfig.powerSaveMode;
@@ -96,6 +102,9 @@ void loadConfig() {
 
         // Set default loop detection
         loopDetectMode = defaultConfig.loopDetectMode;
+
+        // Set default auto-add max hops
+        autoAddMaxHops = defaultConfig.autoAddMaxHops;
 
         CONFIG_LOG("[C] First boot, using defaults\n\r");
         saveConfig();  // Save defaults
@@ -129,6 +138,9 @@ void saveConfig() {
     // Save loop detection mode
     config.loopDetectMode = loopDetectMode;
 
+    // Save auto-add max hops
+    config.autoAddMaxHops = autoAddMaxHops;
+
     memset(config.reserved, 0, sizeof(config.reserved));
 
     EEPROM.put(0, config);
@@ -160,6 +172,9 @@ void resetConfig() {
 
     // Reset loop detection mode
     loopDetectMode = defaultConfig.loopDetectMode;
+
+    // Reset auto-add max hops
+    autoAddMaxHops = defaultConfig.autoAddMaxHops;
 
     saveConfig();
     CONFIG_LOG("[C] Reset to factory defaults\n\r");

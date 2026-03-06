@@ -99,6 +99,11 @@ extern uint8_t powerSaveMode;
 extern uint8_t loopDetectMode;  // 0=off, 1=minimal, 2=moderate, 3=strict
 
 //=============================================================================
+// Auto-add Max Hops Filter
+//=============================================================================
+extern uint8_t autoAddMaxHops;  // 0=no limit, 1-64=max hops for auto-add contacts
+
+//=============================================================================
 // Timing
 //=============================================================================
 extern uint32_t bootTime;

@@ -54,7 +54,8 @@ struct NodeConfig {
     bool alertEnabled;
     uint8_t alertDestPubKey[REPORT_PUBKEY_SIZE];
     uint8_t loopDetectMode;   // 0=off, 1=minimal, 2=moderate, 3=strict
-    uint8_t reserved[3];
+    uint8_t autoAddMaxHops;   // 0=no limit, 1-64=max hops for auto-add contacts
+    uint8_t reserved[2];
 };
 #endif
 

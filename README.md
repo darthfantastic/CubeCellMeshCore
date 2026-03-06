@@ -202,6 +202,12 @@ MIT License - See LICENSE file for details.
   - Backward compatible: default mode `strict` maintains original behavior
   - Stored in EEPROM, survives reboots
   - Test script: `tools/test_loop_detect.py`
+- **Max Hops Filter for Auto-add Contacts** - MeshCore 1.14 compatible hop count filtering
+  - Limit auto-add of contacts by hop count (0 = no limit, 1-64 = max hops)
+  - New commands: `get autoadd.maxhops`, `set autoadd.maxhops <0-64>`
+  - Default: 0 (no limit, backward compatible)
+  - Reduces contact list pollution from distant nodes
+  - Test script: `tools/test_autoadd_maxhops.py`
 
 ### v0.5.2 (2026-02-15)
 - **Extended MeshCore CLI** - 23 new commands for full MeshCore standard compatibility
