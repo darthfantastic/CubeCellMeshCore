@@ -30,6 +30,7 @@ const NodeConfig defaultConfig = {
     {0},    // reportDestPubKey (empty)
     false,  // alertEnabled
     {0},    // alertDestPubKey (empty)
+    LOOP_DETECT_STRICT,  // loopDetectMode (default: strict for backward compat)
     {0}     // reserved
 };
 
@@ -65,9 +66,14 @@ void loadConfig() {
         alertEnabled = config.alertEnabled;
         memcpy(alertDestPubKey, config.alertDestPubKey, REPORT_PUBKEY_SIZE);
 
-        CONFIG_LOG("[C] Loaded (report=%s, alert=%s)\n\r",
+        // Load loop detection mode
+        loopDetectMode = config.loopDetectMode;
+        if (loopDetectMode > LOOP_DETECT_STRICT) loopDetectMode = LOOP_DETECT_STRICT;
+
+        CONFIG_LOG("[C] Loaded (report=%s, alert=%s, loopDetect=%d)\n\r",
             reportEnabled ? "on" : "off",
-            alertEnabled ? "on" : "off");
+            alertEnabled ? "on" : "off",
+            loopDetectMode);
     } else {
         // First boot or version mismatch - use defaults
         powerSaveMode = defaultConfig.powerSaveMode;
@@ -87,6 +93,9 @@ void loadConfig() {
         // Set default alert settings
         alertEnabled = defaultConfig.alertEnabled;
         memset(alertDestPubKey, 0, REPORT_PUBKEY_SIZE);
+
+        // Set default loop detection
+        loopDetectMode = defaultConfig.loopDetectMode;
 
         CONFIG_LOG("[C] First boot, using defaults\n\r");
         saveConfig();  // Save defaults
@@ -117,6 +126,9 @@ void saveConfig() {
     config.alertEnabled = alertEnabled;
     memcpy(config.alertDestPubKey, alertDestPubKey, REPORT_PUBKEY_SIZE);
 
+    // Save loop detection mode
+    config.loopDetectMode = loopDetectMode;
+
     memset(config.reserved, 0, sizeof(config.reserved));
 
     EEPROM.put(0, config);
@@ -145,6 +157,9 @@ void resetConfig() {
     // Reset node alert settings
     alertEnabled = defaultConfig.alertEnabled;
     memset(alertDestPubKey, 0, REPORT_PUBKEY_SIZE);
+
+    // Reset loop detection mode
+    loopDetectMode = defaultConfig.loopDetectMode;
 
     saveConfig();
     CONFIG_LOG("[C] Reset to factory defaults\n\r");

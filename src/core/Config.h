@@ -27,6 +27,14 @@
 #endif
 
 //=============================================================================
+// Loop Detection Modes
+//=============================================================================
+#define LOOP_DETECT_OFF       0  // No loop detection (allow unlimited)
+#define LOOP_DETECT_MINIMAL   1  // Minimal: allow 4+ repeats in path
+#define LOOP_DETECT_MODERATE  2  // Moderate: allow 2+ repeats
+#define LOOP_DETECT_STRICT    3  // Strict: allow only 1 occurrence (original behavior)
+
+//=============================================================================
 // NodeConfig structure
 //=============================================================================
 #ifndef NODECONFIG_DEFINED
@@ -45,7 +53,8 @@ struct NodeConfig {
     uint8_t reportDestPubKey[REPORT_PUBKEY_SIZE];
     bool alertEnabled;
     uint8_t alertDestPubKey[REPORT_PUBKEY_SIZE];
-    uint8_t reserved[4];
+    uint8_t loopDetectMode;   // 0=off, 1=minimal, 2=moderate, 3=strict
+    uint8_t reserved[3];
 };
 #endif
 

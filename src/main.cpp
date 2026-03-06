@@ -445,6 +445,31 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         uint8_t hops = atoi(cmd + 14);
         if (hops >= 1 && hops <= 15) { repeaterHelper.setMaxFloodHops(hops); CP("hops:%d\n", hops); }
     }
+    else if (strcmp(cmd, "get loop.detect") == 0) {
+        const char* mode = (loopDetectMode == LOOP_DETECT_OFF) ? "off" :
+                           (loopDetectMode == LOOP_DETECT_MINIMAL) ? "minimal" :
+                           (loopDetectMode == LOOP_DETECT_MODERATE) ? "moderate" : "strict";
+        CP("> %s\n", mode);
+    }
+    else if (strncmp(cmd, "set loop.detect ", 16) == 0) {
+        const char* arg = cmd + 16;
+        uint8_t newMode = 0xFF;
+        if (strcmp(arg, "off") == 0) newMode = LOOP_DETECT_OFF;
+        else if (strcmp(arg, "minimal") == 0) newMode = LOOP_DETECT_MINIMAL;
+        else if (strcmp(arg, "moderate") == 0) newMode = LOOP_DETECT_MODERATE;
+        else if (strcmp(arg, "strict") == 0) newMode = LOOP_DETECT_STRICT;
+
+        if (newMode != 0xFF) {
+            loopDetectMode = newMode;
+            saveConfig();
+            const char* mode = (loopDetectMode == LOOP_DETECT_OFF) ? "off" :
+                               (loopDetectMode == LOOP_DETECT_MINIMAL) ? "minimal" :
+                               (loopDetectMode == LOOP_DETECT_MODERATE) ? "moderate" : "strict";
+            CP("loop.detect=%s\n", mode);
+        } else {
+            CP("E:off|minimal|moderate|strict\n");
+        }
+    }
     else if (strncmp(cmd, "set name ", 9) == 0) {
         const char* n = cmd + 9;
         if (strlen(n) > 0 && strlen(n) < 16) {
@@ -2148,15 +2173,42 @@ bool shouldForward(MCPacket* pkt) {
         return false;
     }
 
-    // FLOOD: check path length and loop prevention
+    // FLOOD: check path length and loop detection
     if (isFlood) {
         if (pkt->pathLen >= MC_MAX_PATH_SIZE - 1) {
             return false;
         }
-        // Loop prevention: don't forward if we're already in the path
-        uint8_t myHash = nodeIdentity.getNodeHash();
-        for (uint8_t i = 0; i < pkt->pathLen; i++) {
-            if (pkt->path[i] == myHash) return false;
+
+        // Loop detection with configurable strictness
+        if (loopDetectMode != LOOP_DETECT_OFF) {
+            uint8_t myHash = nodeIdentity.getNodeHash();
+            uint8_t occurrences = 0;
+
+            // Count how many times we appear in the path
+            for (uint8_t i = 0; i < pkt->pathLen; i++) {
+                if (pkt->path[i] == myHash) {
+                    occurrences++;
+                }
+            }
+
+            // Check against threshold based on mode
+            uint8_t maxOccurrences;
+            switch (loopDetectMode) {
+                case LOOP_DETECT_MINIMAL:
+                    maxOccurrences = 4;  // Allow up to 4 occurrences
+                    break;
+                case LOOP_DETECT_MODERATE:
+                    maxOccurrences = 2;  // Allow up to 2 occurrences
+                    break;
+                case LOOP_DETECT_STRICT:
+                default:
+                    maxOccurrences = 1;  // Allow only 1 occurrence (original behavior)
+                    break;
+            }
+
+            if (occurrences >= maxOccurrences) {
+                return false;  // Loop detected
+            }
         }
     }
 

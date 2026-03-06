@@ -195,6 +195,14 @@ MIT License - See LICENSE file for details.
 
 ## Changelog
 
+### v0.6.0 (2026-03-06)
+- **Loop Detection System** - MeshCore 1.14 compatible configurable loop detection
+  - Four modes: `off`, `minimal` (4+ occurrences), `moderate` (2+), `strict` (1, default)
+  - New commands: `get loop.detect`, `set loop.detect {off|minimal|moderate|strict}`
+  - Backward compatible: default mode `strict` maintains original behavior
+  - Stored in EEPROM, survives reboots
+  - Test script: `tools/test_loop_detect.py`
+
 ### v0.5.2 (2026-02-15)
 - **Extended MeshCore CLI** - 23 new commands for full MeshCore standard compatibility
   - `get` aliases: `get name`, `get lat`, `get lon`, `get tx`, `get radio`, `get freq`, `get repeat`, `get flood.max`, `get advert.interval`, `get guest.password`, `get public.key`
