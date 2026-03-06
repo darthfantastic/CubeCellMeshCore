@@ -247,15 +247,19 @@
 //=============================================================================
 // EEPROM Configuration
 //=============================================================================
-#define EEPROM_SIZE         512     // NodeConfig(~110) + Identity(~132) need ~260 bytes minimum
+#define EEPROM_SIZE         512     // NodeConfig(~150) + Identity(~132) need ~300 bytes minimum
 #define EEPROM_MAGIC        0xCC3C      // Magic number to validate config
-#define EEPROM_VERSION      4           // Config version (4 = added node alert)
+#define EEPROM_VERSION      5           // Config version (5 = added regions support)
 
 // Password length (max 15 chars + null terminator)
 #define CONFIG_PASSWORD_LEN 16
 
 // Public key size for destinations
 #define REPORT_PUBKEY_SIZE  32          // Ed25519 public key size
+
+// Region & Scope support (MeshCore 1.10.0+)
+#define MC_MAX_REGIONS      8           // Max regions per repeater (8 fits in 64 bytes)
+#define MC_REGION_LEN       8           // Region code length (e.g., "us-co")
 
 #ifndef NODECONFIG_DEFINED
 #define NODECONFIG_DEFINED
@@ -275,7 +279,10 @@ struct NodeConfig {
     // Node alert settings (v4)
     bool alertEnabled;                      // Node alert enabled
     uint8_t alertDestPubKey[REPORT_PUBKEY_SIZE]; // Alert destination public key
-    uint8_t reserved[4];                    // Reserved for future use
+    // Region & Scope support (v5) - MeshCore 1.10.0+
+    uint8_t regionCount;                    // Number of configured regions (0-8)
+    char regions[MC_MAX_REGIONS][MC_REGION_LEN]; // Region codes (e.g., "us", "us-co", "*")
+    uint8_t reserved[3];                    // Reserved for future use (was 4, now 3)
 };
 #endif
 

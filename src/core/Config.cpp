@@ -32,6 +32,8 @@ const NodeConfig defaultConfig = {
     {0},    // alertDestPubKey (empty)
     LOOP_DETECT_STRICT,  // loopDetectMode (default: strict for backward compat)
     0,      // autoAddMaxHops (default: no limit)
+    1,      // regionCount (default: wildcard only)
+    {"*", "", "", "", "", "", "", ""},  // regions (default: wildcard for backward compat)
     {0}     // reserved
 };
 
