@@ -1,4 +1,4 @@
-# Region & Scope System - Design Document
+# Region System - Design Document
 
 **Version:** 0.8.0 (planned)
 **MeshCore Compatibility:** 1.10.0+
@@ -9,69 +9,160 @@
 
 ## Overview
 
-This document describes the planned implementation of the **Region** system for CubeCellMeshCore, aligned with the actual MeshCore protocol.
-
-### What Regions Are in MeshCore
-
-Regions are a **deny-based flood filtering** mechanism. Each repeater maintains a **RegionMap** — a hierarchical tree of named regions, each with a flag controlling whether flood packets with that transport code should be forwarded or dropped.
-
-Key concepts:
-- **Default: forward everything** — regions only restrict, never grant
-- **Deny-based** — `REGION_DENY_FLOOD` flag blocks forwarding for a specific region
-- **Hierarchical** — regions form a tree (e.g., `*` > `AU` > `AU/NSW` > `AU/NSW/SYD`)
-- **Transport codes** — carried in `ROUTE_TYPE_TRANSPORT_FLOOD` (0x00) and `ROUTE_TYPE_TRANSPORT_DIRECT` (0x03) packets, embedded in the path field
-- **Backward compatible** — legacy `ROUTE_TYPE_FLOOD` (0x01) packets have no transport code and are always forwarded unless globally disabled
-
-### What Regions Are NOT
-
-- NOT an allow-list of geographic codes (our previous incorrect design)
-- NOT ISO country codes like "us-co" or "eu-it"
-- NOT a scope matching system with wildcards meaning "forward all"
+This document describes the planned implementation of the **Region** system for CubeCellMeshCore, aligned with the actual MeshCore protocol as found in the upstream source code.
 
 ---
 
 ## MeshCore Protocol Reference
 
-### Transport Codes in Packets
+### What Regions Are
 
-When route type is `ROUTE_TYPE_TRANSPORT_FLOOD` (0x00) or `ROUTE_TYPE_TRANSPORT_DIRECT` (0x03), the path field begins with a transport code:
+Regions are a **deny-based flood filtering** mechanism. Each repeater maintains a **RegionMap** — a hierarchical set of named regions, each with flags controlling whether flood packets with matching transport codes should be forwarded or dropped.
+
+Key principles:
+- **Default: forward everything** — with no region entries configured, all packets are forwarded
+- **Deny-based** — `REGION_DENY_FLOOD` flag blocks forwarding for a specific region
+- **Hierarchical** — regions form a parent/child tree (e.g., `*` > `AU` > `AU/NSW`)
+- **Wildcard `*`** = global/legacy scope; controls behavior of legacy `ROUTE_TYPE_FLOOD` packets
+- **Applies only to channels** — does not affect direct messages (DMs)
+
+### What Regions Are NOT
+
+- NOT an allow-list of geographic codes
+- NOT frequency band selection (that's `MC_REGION_EU868`/`US915`/`AU915`)
+- NOT a simple string matching system
+
+### Region Names
+
+Region codes follow this convention:
+- **Countries:** ISO 3166-1 alpha-2 (e.g., `nl`, `au`, `us`)
+- **Subdivisions:** UNECE codes with hyphen (e.g., `nl-li`, `au-nsw`)
+- **Valid chars:** alphanumeric, accented chars, `-`, `$`, `#`
+- **Max length:** 31 characters
+- **Separator:** hierarchical parent/child, not slash-encoded in name
+
+---
+
+## Transport Codes (Wire Format)
+
+### Packet Structure
+
+Route types 0x00 (`ROUTE_TYPE_TRANSPORT_FLOOD`) and 0x03 (`ROUTE_TYPE_TRANSPORT_DIRECT`) carry transport codes. The wire format is:
 
 ```
-path = [transport_code_len (1 byte)] [transport_code (N bytes)] [hop entries...]
+[header 1B] [transport_codes 4B] [path_len 1B] [path...] [payload...]
 ```
 
-- `transport_code_len = 0` means no transport code (same as legacy)
-- Transport code is a UTF-8 string identifying the region (e.g., `"AU"`, `"AU/NSW"`)
+**Transport codes are 4 bytes on the wire:** two `uint16_t` values written via `memcpy()`.
 
-### Packet Forwarding Logic (MeshCore Reference)
+For legacy route types (0x01 `ROUTE_TYPE_FLOOD`, 0x02 `ROUTE_TYPE_DIRECT`), transport codes are absent and the wire format is:
 
 ```
-allowPacketForward(packet):
-  1. If global forwarding disabled -> DROP
-  2. If flood and path_len >= flood_max (default 64) -> DROP
-  3. If flood: call filterRecvFloodPacket()
-     - Extract transport code from path
-     - Search RegionMap for matching entry
-     - If match has REGION_DENY_FLOOD flag -> recv_pkt_region = NULL -> DROP
-     - If match without deny flag -> recv_pkt_region = entry -> FORWARD
-     - If no match, check wildcard (*) entry -> same logic
-     - If recv_pkt_region == NULL -> DROP
-  4. FORWARD
+[header 1B] [path_len 1B] [path...] [payload...]
 ```
 
-### CLI Commands (MeshCore Reference)
+### Transport Code Generation (Cryptographic)
+
+Transport codes are **NOT** plain region names. They are derived cryptographically:
+
+1. **Region key:** `SHA256(region_name)` → 16-byte AES key
+2. **Transport code:** `HMAC-SHA256(region_key, payload_type_byte + payload)` → truncated to **2 bytes (uint16_t)**
+3. **Two codes per packet:** `transport_codes[0]` and `transport_codes[1]` (the second appears to be for a parent/related region)
+4. **Reserved values:** 0x0000 and 0xFFFF are avoided (incremented/decremented)
+
+This means:
+- Transport codes are **per-packet** — same region produces different codes for different payloads
+- A repeater must have the region key (derived from name) to verify if a packet matches
+- The `findMatch()` method iterates regions, computes expected transport code, and compares with packet
+
+### Serialization (from Packet.cpp)
+
+```cpp
+// writeTo()
+if (hasTransportCodes()) {
+    memcpy(&dest[i], &transport_codes[0], 2); i += 2;
+    memcpy(&dest[i], &transport_codes[1], 2); i += 2;
+}
+
+// readFrom()
+if (hasTransportCodes()) {
+    memcpy(&transport_codes[0], &src[i], 2); i += 2;
+    memcpy(&transport_codes[1], &src[i], 2); i += 2;
+} else {
+    transport_codes[0] = transport_codes[1] = 0;
+}
+```
+
+---
+
+## Forwarding Logic (from MeshCore Source)
+
+### filterRecvFloodPacket() (MyMesh.cpp)
+
+Called during packet reception to determine region membership:
+
+```cpp
+bool MyMesh::filterRecvFloodPacket(Packet* pkt) {
+    if (pkt->getRouteType() == ROUTE_TYPE_TRANSPORT_FLOOD) {
+        // Iterate regions, compute expected transport code, compare with packet
+        recv_pkt_region = region_map.findMatch(pkt, REGION_DENY_FLOOD);
+    } else if (pkt->getRouteType() == ROUTE_TYPE_FLOOD) {
+        // Legacy flood: check wildcard entry
+        if (region_map.getWildcard().flags & REGION_DENY_FLOOD) {
+            recv_pkt_region = NULL;
+        } else {
+            recv_pkt_region = &region_map.getWildcard();
+        }
+    } else {
+        recv_pkt_region = NULL;
+    }
+    return false;  // continue normal processing
+}
+```
+
+### allowPacketForward() (MyMesh.cpp)
+
+Called to decide whether to rebroadcast:
+
+```cpp
+bool MyMesh::allowPacketForward(const Packet* packet) {
+    if (_prefs.disable_fwd) return false;
+    if (packet->isRouteFlood() && packet->getPathHashCount() >= _prefs.flood_max)
+        return false;
+    if (packet->isRouteFlood() && recv_pkt_region == NULL) {
+        // Unknown transport code or wildcard denied
+        return false;
+    }
+    // Loop detection checks...
+    return true;
+}
+```
+
+### findMatch() Logic (RegionMap.cpp)
+
+For each region entry where `(flags & REGION_DENY_FLOOD) == 0`:
+1. Load the region's transport key (SHA256 of name → 16-byte key)
+2. Compute expected transport code: `HMAC-SHA256(key, payload)` → 2 bytes
+3. Compare with `packet->transport_codes[0]`
+4. If match found, return the entry (non-NULL = allow)
+
+If a matching region has `REGION_DENY_FLOOD` set, return NULL (= block).
+
+---
+
+## CLI Commands (MeshCore Reference)
 
 | Command | Description |
 |---------|-------------|
-| `region` | List all defined regions and flood permissions |
+| `region` | List all defined regions and flood permissions (serial only) |
 | `region get {* \| name}` | Show region name, parent, flood status |
-| `region put {name} {* \| parent}` | Add/update a region definition |
+| `region put {name} {* \| parent}` | Add/update region definition |
 | `region remove {name}` | Remove region (must have no children) |
 | `region allowf {* \| name}` | Allow flood forwarding for region |
-| `region denyf {* \| name}` | Deny flood forwarding for region |
+| `region denyf {* \| name}` | Deny flood forwarding (avoid on `*`) |
 | `region home` | Show current home region |
 | `region home {* \| name}` | Set home region |
-| `region list {allowed\|denied}` | List regions filtered by flood permission |
+| `region list {allowed\|denied}` | List regions by flood permission |
 | `region save` | Persist region map to storage |
 | `region load` | Load region hierarchy via serial (multi-line) |
 
@@ -82,163 +173,141 @@ allowPacketForward(packet):
 ### Hardware Constraints
 
 The HTCC-AB01 (ASR6501) has severe resource limits:
-- **Flash:** 131 KB (currently 99.3% used)
+- **Flash:** 131 KB (currently 99.3% used — ~900 bytes free)
 - **RAM:** 16 KB (currently 52% used)
-- **EEPROM:** 512 bytes (NodeConfig ~110 bytes + Identity ~132 bytes)
+- **EEPROM:** 512 bytes (limited space after NodeConfig + Identity)
+- **Crypto:** `rweather/Crypto` library already included (SHA256, HMAC available)
 
-A full hierarchical tree is not feasible. We need a **simplified but protocol-correct** implementation.
+### Feasibility Analysis
+
+The region system requires:
+1. **SHA256 key derivation** — already available via Crypto library
+2. **HMAC-SHA256 computation per region per packet** — CPU cost per match
+3. **Region storage** — names + flags + derived keys
+
+**Critical issue:** With ~900 bytes of Flash free, a full implementation won't fit.
+Options:
+- Make it a compile-time feature (`#ifdef ENABLE_REGIONS`)
+- Disable other features in LITE_MODE to free space
+- Implement only transport code parsing (read-only, no filtering)
 
 ### Proposed Simplified Design
 
-Instead of a full tree, use a **flat RegionMap** with a small number of entries:
+Minimal implementation with 4 region slots:
 
 ```cpp
-#define REGION_MAX_ENTRIES    4    // Max region entries (keep small for RAM/Flash)
-#define REGION_NAME_LEN      12   // Max region name length (e.g., "AU/NSW/SYD")
-#define REGION_DENY_FLOOD    0x01 // Flag: deny flood forwarding
+#define REGION_MAX_ENTRIES    4
+#define REGION_NAME_LEN       16    // Max region name (e.g., "au-nsw")
+#define REGION_DENY_FLOOD     0x01
 
 struct RegionEntry {
-    char name[REGION_NAME_LEN];   // Region name (e.g., "AU", "AU/NSW", "*")
-    uint8_t flags;                // REGION_DENY_FLOOD etc.
+    char name[REGION_NAME_LEN];     // Region name
+    uint8_t flags;                  // REGION_DENY_FLOOD etc.
+    uint8_t key[16];               // SHA256(name) truncated - cached
 };
 
 struct RegionMap {
-    uint8_t count;                              // Number of entries (0 = no filtering)
-    RegionEntry entries[REGION_MAX_ENTRIES];     // Flat list
-    char home[REGION_NAME_LEN];                 // Home region name
+    uint8_t count;                                  // 0 = no filtering
+    RegionEntry entries[REGION_MAX_ENTRIES];
+    char home[REGION_NAME_LEN];
 };
 ```
 
-**Memory cost:** ~54 bytes RAM, ~54 bytes EEPROM
+**Memory cost:** ~4 * (16+1+16) + 16 + 1 = ~149 bytes RAM/EEPROM
 
-### Matching Logic
+### Implementation Phases
 
-```cpp
-// Called by allowPacketForward() for flood packets
-RegionEntry* filterRecvFloodPacket(const char* transportCode) {
-    // No entries = no filtering = forward all (default behavior)
-    if (regionMap.count == 0) return &defaultAllowEntry;
-
-    // Search for exact match first, then parent prefixes
-    for (int i = 0; i < regionMap.count; i++) {
-        if (matchesRegion(regionMap.entries[i].name, transportCode)) {
-            if (regionMap.entries[i].flags & REGION_DENY_FLOOD)
-                return NULL;  // Denied
-            return &regionMap.entries[i];  // Allowed
-        }
-    }
-
-    // Check wildcard entry
-    for (int i = 0; i < regionMap.count; i++) {
-        if (strcmp(regionMap.entries[i].name, "*") == 0) {
-            if (regionMap.entries[i].flags & REGION_DENY_FLOOD)
-                return NULL;
-            return &regionMap.entries[i];
-        }
-    }
-
-    // No match, no wildcard -> forward (permissive default)
-    return &defaultAllowEntry;
-}
-
-// Region hierarchy match: "AU" matches transport code "AU/NSW"
-bool matchesRegion(const char* region, const char* transportCode) {
-    size_t rLen = strlen(region);
-    if (strncmp(region, transportCode, rLen) == 0) {
-        // Exact match or parent prefix (next char must be '/' or '\0')
-        char next = transportCode[rLen];
-        return (next == '\0' || next == '/');
-    }
-    return false;
-}
-```
-
-### Transport Code Extraction from Path
-
-```cpp
-// Extract transport code from TRANSPORT_FLOOD/TRANSPORT_DIRECT packet path
-bool extractTransportCode(const uint8_t* path, uint8_t pathLen,
-                          char* outCode, uint8_t maxLen) {
-    if (pathLen < 1) return false;
-    uint8_t tcLen = path[0];
-    if (tcLen == 0) {
-        outCode[0] = '\0';  // No transport code
-        return true;
-    }
-    if (tcLen >= pathLen || tcLen >= maxLen) return false;
-    memcpy(outCode, &path[1], tcLen);
-    outCode[tcLen] = '\0';
-    return true;
-}
-```
-
----
-
-## Implementation Phases
-
-### Phase 1: Transport Code Parsing
-- Add `extractTransportCode()` to Packet.h
-- Parse transport codes from TRANSPORT_FLOOD and TRANSPORT_DIRECT packets
-- Log transport codes when received (debug only)
+#### Phase 1: Transport Code Support in Packet.h --- DONE
+- Added `uint16_t transport_codes[2]` to MCPacket
+- Updated `serialize()`/`deserialize()` for transport code wire format
+- Added `hasTransportCodes()` helper
 - **No behavioral change** — all packets still forwarded
+- **Cost:** +48 bytes Flash, +16 bytes RAM (4 queue slots x 4 bytes)
 
-### Phase 2: RegionMap Data Structure
-- Add RegionMap struct to Config.h
-- Add EEPROM storage for RegionMap
-- Bump EEPROM version
-- Default: empty map (0 entries = forward all)
+#### Phase 2: RegionMap Data Structure --- DONE
+- Created `src/mesh/RegionMap.h` with RegionEntry/RegionMap classes
+- SHA256 key derivation from region name (uses existing Crypto lib)
+- HMAC-SHA256 transport code verification via findMatch()
+- put/remove/allowFlood/denyFlood operations
+- 4 region slots + wildcard entry
+- **Cost:** +272 bytes Flash, +168 bytes RAM
 
-### Phase 3: Forwarding Integration
-- Add `filterRecvFloodPacket()` to forwarding logic
-- Only filter TRANSPORT_FLOOD packets with non-empty transport codes
-- Legacy FLOOD packets unaffected
+#### Phase 3: Forwarding Integration --- DONE
+- Added region filter in `shouldForward()` in main.cpp
+- TRANSPORT_FLOOD: checks regionMap.findMatch() against transport codes
+- Legacy FLOOD: checks wildcard REGION_DENY_FLOOD flag
+- Default behavior: forward everything (no regions configured = no filtering)
 
-### Phase 4: CLI Commands (Subset)
-- `region` — list entries and permissions
-- `region put {name} {parent}` — add/update entry
-- `region remove {name}` — remove entry
-- `region allowf {name}` — clear DENY_FLOOD flag
-- `region denyf {name}` — set DENY_FLOOD flag
-- `region home` / `region home {name}` — get/set home
-- `region save` — persist to EEPROM
+#### Phase 4: CLI Commands --- DEFERRED (Flash too full)
+- Needs ~400+ bytes Flash for CLI strings and strcmp calls
+- Only 584 bytes Flash remaining after Phase 1-3
+- Can be enabled when other features are trimmed or LITE_MODE saves more space
+- Planned commands: `region`, `region put`, `region remove`, `region allowf`, `region denyf`
 
-### Phase 5: Testing
-- Unit tests for transport code extraction
-- Unit tests for region matching (exact, hierarchical, wildcard)
-- Integration tests for packet forwarding with deny/allow
-- Backward compatibility tests with legacy FLOOD packets
+#### Phase 5: Testing
+- Transport code serialization/deserialization
+- SHA256 key derivation from names
+- HMAC-SHA256 transport code computation
+- Region matching with deny/allow
+- Backward compatibility with legacy FLOOD packets
 
----
-
-## Flash Budget Estimate
+### Flash Budget Estimate
 
 | Component | Estimated Size |
 |-----------|---------------|
-| Transport code parsing | ~200 bytes |
-| RegionMap + matching | ~500 bytes |
-| EEPROM load/save | ~300 bytes |
-| CLI commands | ~800 bytes |
-| **Total** | **~1.8 KB** |
+| Transport code serialize/deserialize | ~100 bytes |
+| SHA256 key derivation | ~50 bytes (uses existing lib) |
+| HMAC-SHA256 transport code calc | ~100 bytes (uses existing lib) |
+| RegionMap + findMatch | ~400 bytes |
+| EEPROM load/save | ~200 bytes |
+| CLI commands (minimal) | ~600 bytes |
+| **Total** | **~1.5 KB** |
 
-With Flash at 99.3%, we have ~900 bytes free. This means:
-- Phase 1-3 can likely fit (~1.0 KB)
-- Phase 4 (CLI) may require LITE_MODE optimizations or trimming other features
-- Consider making region support a compile-time option (`#define ENABLE_REGIONS`)
+After Phase 1-3, available Flash is ~584 bytes. Actual costs:
+- Phase 1: DONE (+48 bytes Flash, +16 bytes RAM)
+- Phase 2-3: DONE (+272 bytes Flash, +168 bytes RAM)
+- Phase 4 (CLI): DEFERRED — needs ~400+ bytes, won't fit without freeing space
+
+---
+
+## Known Issues in MeshCore Protocol
+
+Per [Issue #1747](https://github.com/meshcore-dev/MeshCore/issues/1747):
+- Wildcard `*` behavior is documented inconsistently
+- Unclear if `*` means "repeat all traffic" or "repeat only untagged traffic"
+- Region-tagged ADVERT packets may be dropped by wildcard-only repeaters
+- The protocol is still evolving — implementation should be conservative
 
 ---
 
 ## References
 
 - [MeshCore GitHub](https://github.com/meshcore-dev/MeshCore)
-- [MeshCore Repeater CLI Reference](https://github.com/meshcore-dev/MeshCore/wiki/Repeater-&-Room-Server-CLI-Reference)
-- [MeshCore Repeater Applications - DeepWiki](https://deepwiki.com/ripplebiz/MeshCore/3.2-repeater-applications)
+- [MeshCore Packet.h](https://github.com/meshcore-dev/MeshCore/blob/main/src/Packet.h) — wire format, route types
+- [MeshCore Packet.cpp](https://github.com/meshcore-dev/MeshCore/blob/main/src/Packet.cpp) — transport code serialization
+- [MeshCore helpers/RegionMap.h](https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/RegionMap.h) — RegionEntry, findMatch
+- [MeshCore helpers/RegionMap.cpp](https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/RegionMap.cpp) — region matching logic
+- [MeshCore helpers/TransportKeyStore.h](https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/TransportKeyStore.h) — key derivation
+- [MeshCore helpers/TransportKeyStore.cpp](https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/TransportKeyStore.cpp) — HMAC-SHA256 code calc
+- [MeshCore simple_repeater/MyMesh.cpp](https://github.com/meshcore-dev/MeshCore/blob/main/examples/simple_repeater/MyMesh.cpp) — forwarding logic
+- [MeshCore CLI Reference](https://github.com/meshcore-dev/MeshCore/wiki/Repeater-&-Room-Server-CLI-Reference)
+- [MeshCore Issue #1747](https://github.com/meshcore-dev/MeshCore/issues/1747) — region behavior ambiguity
+- [MeshCore Region Info](https://github.com/luckystriike22/meshcore_region_info) — community region guide
 
 ---
 
 ## Changelog
 
-### 2026-03-06 - Design Document Rewritten
+### 2026-03-06 v2 - Corrected with upstream source code analysis
+- Transport codes are uint16_t[2] (4 bytes on wire), not UTF-8 strings
+- Transport codes are cryptographic: HMAC-SHA256(SHA256(name), payload) → 2 bytes
+- Added complete wire format from Packet.cpp
+- Added findMatch() crypto verification logic
+- Added TransportKeyStore key derivation details
+- Added known protocol issues (Issue #1747)
+- Updated flash budget with crypto costs
+- Referenced actual source files in MeshCore repo
+
+### 2026-03-06 v1 - Design document rewritten
 - Removed incorrect allow-list geographic scope design
-- Aligned with actual MeshCore deny-based RegionMap protocol
-- Simplified for HTCC-AB01 hardware constraints
-- Added flash budget analysis
+- Aligned with MeshCore deny-based RegionMap protocol
