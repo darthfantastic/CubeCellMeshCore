@@ -1,8 +1,8 @@
-# CubeCellMeshCore v0.7.0 - Command Reference
+# CubeCellMeshCore v0.8.0 - Command Reference
 
 Serial console at 115200 baud. Type `help` for command list.
 
-Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliases are kept for backwards compatibility.
+Commands marked **MeshCore** use the standard MeshCore CLI naming.
 
 ## Status & Info
 
@@ -12,8 +12,6 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `status` | Firmware version, node name/hash, uptime, time sync |
 | `stats` | Session counters: RX/TX/FWD/ERR, ADV TX/RX, queue length |
 | `stats-core` | Battery voltage/percent, uptime, queue status **MeshCore** |
-| `stats-radio` | Alias for `radiostats` **MeshCore** |
-| `stats-packets` | Alias for `packetstats` **MeshCore** |
 | `ver` | Show firmware version **MeshCore** |
 | `board` | Show hardware board name (HTCC-AB01) **MeshCore** |
 | `clock` | Show current time (alias of `time`) **MeshCore** |
@@ -35,14 +33,13 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `radio` | Show current radio parameters (+ temp radio if active) |
 | `rssi` | Show last RSSI and SNR |
 | `acl` | Show admin/guest passwords and active session count |
-| `set repeat` / `get repeat` | Show repeat status and max hops **MeshCore** |
-| `set advert.interval` / `get advert.interval` | Show ADVERT interval (minutes) and next scheduled **MeshCore** |
-| `set tx` / `get tx` | Show current TX power, max, auto status **MeshCore** |
-| `set name` / `get name` | Show current node name **MeshCore** |
+| `repeat` | Show repeat status and max hops |
+| `advert interval` | Show ADVERT interval (minutes) and next scheduled |
+| `txpower` | Show current TX power, max, auto status |
+| `get name` | Show current node name **MeshCore** |
 | `get lat` | Show current latitude **MeshCore** |
 | `get lon` | Show current longitude **MeshCore** |
 | `get freq` | Show current radio frequency **MeshCore** |
-| `get radio` | Alias for `radio` **MeshCore** |
 | `get flood.max` | Show max flood hops **MeshCore** |
 | `get guest.password` | Show guest password **MeshCore** |
 | `get public.key` | Show public key (hex, serial only) **MeshCore** |
@@ -54,15 +51,6 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `get direct.txdelay` / `set direct.txdelay` | Show direct TX delay factor (0-500, default 100) **MeshCore** |
 | `get agc.reset.interval` / `set agc.reset.interval` | Show AGC reset interval in seconds (0=disabled) **MeshCore** |
 | `get flood.advert.interval` / `set flood.advert.interval` | Show flood ADVERT interval in hours (0=auto) **MeshCore** |
-
-### Legacy read-only aliases (still supported)
-
-| Legacy | New Equivalent |
-|--------|----------------|
-| `repeat` | `set repeat` / `get repeat` |
-| `advert interval` | `set advert.interval` / `get advert.interval` |
-| `txpower` | `set tx` / `get tx` |
-| `name` | `set name` / `get name` |
 
 ## Node Configuration
 
@@ -89,17 +77,11 @@ Commands marked **MeshCore** use the standard MeshCore CLI naming. Legacy aliase
 | `nodetype chat\|repeater` | Set node type (serial only) |
 | `time <timestamp>` | Set Unix time manually (serial only) |
 
-### Legacy configuration aliases (still supported)
-
-| Legacy | New Equivalent |
-|--------|----------------|
-| `name <name>` | `set name <name>` |
-
 ## Radio
 
 | Command | Description |
 |---------|-------------|
-| `radio` / `get radio` | Show current radio parameters |
+| `radio` | Show current radio parameters |
 | `get freq` | Show current frequency only **MeshCore** |
 | `set freq <MHz>` | Set frequency only (keeps other params), activates temp radio **MeshCore** |
 | `set radio <freq>,<bw>,<sf>,<cr>` | Set radio parameters (comma-separated, serial only) **MeshCore** |
@@ -116,28 +98,19 @@ Example with timeout: `set radio 869.618,62.5,8,8,30` (reverts after 30 minutes)
 
 | Command | Description |
 |---------|-------------|
-| `set tx` | Show current TX power and auto status **MeshCore** |
+| `txpower` | Show current TX power and auto status |
 | `set tx <dBm>` | Set manual TX power (disables auto) **MeshCore** |
-| `set tx auto on` | Enable adaptive TX power **(v0.7.0+)** **MeshCore** |
+| `set tx auto on` | Enable adaptive TX power **MeshCore** |
 | `set tx auto off` | Disable auto, restore max power **MeshCore** |
-
-### Legacy TX power aliases (still supported)
-
-| Legacy | New Equivalent |
-|--------|----------------|
-| `txpower` | `set tx` |
-| `txpower <dBm>` | `set tx <dBm>` |
-| `txpower auto on` | `set tx auto on` |
-| `txpower auto off` | `set tx auto off` |
 
 ### Adaptive TX Power (v0.7.0+)
 
 Automatic transmission power adjustment based on neighbour link quality:
 
-- **Enabled**: `set tx auto on` or `txpower auto on`
-- **Disabled**: `set tx auto off` or `txpower auto off`
+- **Enabled**: `set tx auto on`
+- **Disabled**: `set tx auto off`
 - **Manual**: `set tx 14` (sets 14 dBm, disables auto)
-- **Status**: `set tx` or `txpower` shows: `TxP:14dBm max:21 auto:on`
+- **Status**: `txpower` shows: `TxP:14dBm max:21 auto:on`
 
 **How it works:**
 - Evaluates every 60 seconds
@@ -159,39 +132,51 @@ Automatic transmission power adjustment based on neighbour link quality:
 | `advert` | Send ADVERT packet immediately (flood) |
 | `advert local` | Send ADVERT packet (direct, 0-hop only) |
 | `set advert.interval <min>` | Set ADVERT interval in minutes (1-1440) **MeshCore** |
-| `set advert.interval` | Show current interval and next scheduled **MeshCore** |
+| `advert interval` | Show current interval and next scheduled |
 | `ping` | Send broadcast test packet (FLOOD) |
 | `ping <hash>` | Directed ping to node by hex hash, auto-PONG reply |
 | `trace <hash>` | Trace route to node, shows path and hop count |
-
-### Legacy ADVERT aliases (still supported)
-
-| Legacy | New Equivalent |
-|--------|----------------|
-| `advert interval <sec>` | `set advert.interval <min>` (note: old uses seconds, new uses minutes) |
 
 ## Passwords & Security
 
 | Command | Description |
 |---------|-------------|
-| `password` | Show admin and guest passwords **MeshCore** |
-| `password <pwd>` | Set admin password (serial and remote) **MeshCore** |
-| `set guest.password <pwd>` | Set guest password **MeshCore** |
+| `password` | Show admin and guest passwords |
+| `password admin <pwd>` | Set admin password (serial only) |
+| `password guest <pwd>` | Set guest password (serial only) |
+| `password <pwd>` | Set admin password (remote CLI) **MeshCore** |
+| `set guest.password <pwd>` | Set guest password (remote CLI) **MeshCore** |
 | `get guest.password` | Show guest password **MeshCore** |
 | `setperm <pubkey> <perm>` | Set per-node ACL permission (0-255, serial only) **MeshCore** |
 
-### Legacy password aliases (still supported)
+## Region Filtering (v0.8.0+)
 
-| Legacy (serial) | New Equivalent |
-|--------|----------------|
-| `passwd` | `password` |
-| `passwd admin <pwd>` | `password <pwd>` |
-| `passwd guest <pwd>` | `set guest.password <pwd>` |
+Deny-based flood filtering aligned with MeshCore 1.10.0+ protocol. Each region entry controls whether flood packets with matching transport codes are forwarded or dropped. Default: forward everything (no filtering when no regions configured).
 
-| Legacy (remote) | New Equivalent |
-|--------|----------------|
-| `set password <pwd>` | `password <pwd>` |
-| `set guest <pwd>` | `set guest.password <pwd>` |
+| Command | Description |
+|---------|-------------|
+| `region` | List wildcard and all region entries with flood status (A=allow, D=deny) |
+| `region put <name>` | Add region entry (admin only) |
+| `region remove <name>` | Remove region entry (admin only) |
+| `region allowf <name>` | Allow flood forwarding for region or `*` (admin only) |
+| `region denyf <name>` | Deny flood forwarding for region or `*` (admin only) |
+
+**Region names:** ISO 3166-1 alpha-2 codes (e.g., `nl`, `au`, `us`) or UNECE subdivision codes (e.g., `nl-li`, `au-nsw`). Max 15 characters. Use `*` for the wildcard (controls legacy FLOOD packets).
+
+**Example:**
+```
+region put it          # Add Italy region
+region put it-lom      # Add Lombardy sub-region
+region denyf au        # Block Australian flood traffic
+region allowf *        # Allow legacy flood packets
+```
+
+**How it works:**
+- Transport codes are cryptographic: `HMAC-SHA256(SHA256(region_name), payload)` truncated to 2 bytes
+- 4 region slots + 1 wildcard entry
+- TRANSPORT_FLOOD packets: matched against region map via transport code verification
+- Legacy FLOOD packets: controlled by wildcard `*` entry only
+- Direct messages (DMs) are never filtered
 
 ## Store-and-Forward Mailbox
 
@@ -250,10 +235,10 @@ Blocks DIRECT forwarding to neighbours with degraded links (SNR < -10dB). After 
 
 | Command | Description |
 |---------|-------------|
-| `neighbours` / `neighbors` | List direct repeater neighbours with link quality statistics **(v0.7.0+)** |
+| `neighbours` / `neighbors` | List direct repeater neighbours with link quality statistics |
 | `neighbor.remove <hex>` | Remove neighbour by pubkey hex prefix **MeshCore** |
 
-**v0.7.0+**: The `neighbours` command now shows enhanced link quality metrics:
+The `neighbours` command shows enhanced link quality metrics:
 - **Current and Average RSSI/SNR**: Compare instantaneous vs smoothed values (EMA)
 - **Packet Count**: Total packets received from each neighbour
 - **Circuit Breaker State**: Link health indicator (ok/OPEN/half)
@@ -264,11 +249,6 @@ Nbr:2
  A3 Node1 -82dBm(-84) s:9.0(8.5)dB p:156 cb:ok 5s
  F7 Node2 -95dBm(-93) s:3.5(4.0)dB p:89 cb:ok 12s
 ```
-Where:
-- `-82dBm(-84)` = Current RSSI (Average RSSI)
-- `s:9.0(8.5)dB` = Current SNR (Average SNR)
-- `p:156` = Total packets received
-- `cb:ok` = Circuit breaker state
 
 ## Rate Limiting
 
@@ -292,7 +272,6 @@ Default limits: Login 5/min, Request 30/min, Forward 100/min.
 | Command | Description |
 |---------|-------------|
 | `save` | Save configuration to EEPROM |
-| `erase` | Reset configuration to factory defaults (alias of `reset`) **MeshCore** |
 | `reset` | Reset configuration to factory defaults |
 | `reboot` | Restart device |
 | `clkreboot` | Reset internal clock sync and reboot **MeshCore** |
@@ -342,16 +321,16 @@ All shared commands are available remotely via the MeshCore app's encrypted CLI 
 ### Guest-allowed commands (read-only)
 
 ```
-status  stats  stats-core  stats-radio  stats-packets
-ver  board  clock  time  lifetime  radiostats  packetstats
-telemetry  identity  location  nodes  nodes <page>  neighbours  health  mailbox
+status  stats  stats-core  ver  board  clock  time
+lifetime  radiostats  packetstats  telemetry  identity
+location  nodes  nodes <page>  neighbours  health  mailbox
 power  powersaving  radio  rssi  acl  quiet  cb  log
-get name  get lat  get lon  get tx  get radio  get freq
-get repeat  get flood.max  get advert.interval  get guest.password
+repeat  advert interval  txpower  region
+get name  get lat  get lon  get freq
+get flood.max  get guest.password
 get owner.info  get af  get adc.multiplier  get txdelay
 get rxdelay  get direct.txdelay  get agc.reset.interval
 get flood.advert.interval
-set repeat  set advert.interval  set tx  set name
 set owner.info  set af  set adc.multiplier  set txdelay
 set rxdelay  set direct.txdelay  set agc.reset.interval
 set flood.advert.interval
@@ -373,9 +352,10 @@ sleep on/off  rxboost on/off
 advert  advert local  ping  ping <hash>  trace <hash>
 alert on/off/dest/clear  mailbox clear
 quiet <start> <end>  quiet off
+region put/remove/allowf/denyf <name>
 ratelimit on/off/reset  clear stats  neighbor.remove <hex>
 report on/off/dest/time/test/nodes
-save  erase  reset  reboot  clkreboot
+save  reset  reboot  clkreboot
 ```
 
 ## Radio Settings (EU868 default)
@@ -392,7 +372,7 @@ save  erase  reset  reboot  clkreboot
 ## Tips
 
 1. Always `save` after changing configuration
-2. Set passwords before deploying: `password myAdminPwd` and `set guest.password myGuestPwd`
+2. Set passwords before deploying: `password admin myAdminPwd` and `password guest myGuestPwd`
 3. Use `set lat` and `set lon` separately to set GPS coordinates
 4. Use `set advert.interval 5` for 5-minute ADVERT interval
 5. Use `set tx auto on` to enable adaptive TX power
@@ -405,3 +385,4 @@ save  erase  reset  reboot  clkreboot
 12. Use `set af` to adjust duty cycle (0=off, 10=1.0x, 20=2.0x slower)
 13. Use `set agc.reset.interval 60` to reset receiver gain every 60 seconds
 14. Use `tempradio 869.618 62.5 8 8 30` to auto-revert radio params after 30 minutes
+15. Use `region put <code>` to add region entries for flood filtering (MeshCore 1.10.0+)

@@ -277,14 +277,14 @@ Pass: Alert message transmitted
 
 #### 10.1 View Passwords
 ```
-Command: passwd
+Command: password
 Expected: Current admin and guest passwords displayed
 ```
 
 #### 10.2 Change Passwords
 ```
-Command: passwd admin newadminpass
-Command: passwd guest newguestpass
+Command: password admin newadminpass
+Command: password guest newguestpass
 Expected: Passwords updated
 Pass: New passwords work for remote CLI auth
 ```

@@ -297,7 +297,7 @@ Questo meccanismo e' usato sia da `healthCheck()` che da `alert test`.
 - Creata `CmdCtx` struct per output unificato (serial/buffer)
 - `dispatchSharedCommand()` contiene ~40 comandi condivisi (prima duplicati)
 - `processCommand()` e `processRemoteCommand()` diventati thin wrapper
-- Comandi serial-only: help, newid, nodetype, passwd, tempradio, test, contacts, msg
+- Comandi serial-only: help, newid, nodetype, password, tempradio, test, contacts, msg
 - Comandi remote-only: set password, set guest, report (paginato)
 
 **Risparmio merge CLI**: -3,164 B Flash
@@ -486,6 +486,57 @@ Floor 5dBm, ceiling MC_TX_POWER.
 
 ---
 
+## Fase 4: Region System (MeshCore 1.10.0+) (COMPLETATA)
+
+### Implementazione
+Deny-based flood filtering allineato al protocollo MeshCore. Vedi `docs/REGION_SCOPE_DESIGN.md` per i dettagli.
+
+**Fase 4.1: Transport Code in Packet.h**
+- `uint16_t transport_codes[2]` aggiunto a MCPacket
+- `serialize()`/`deserialize()` aggiornati per wire format con transport codes
+- `hasTransportCodes()` helper
+- Costo: +48 B Flash, +16 B RAM
+
+**Fase 4.2: RegionMap Data Structure**
+- `src/mesh/RegionMap.h`: RegionEntry/RegionMap classes
+- SHA256 key derivation, HMAC-SHA256 transport code verification
+- 4 region slots + wildcard entry
+- Costo: +272 B Flash, +168 B RAM
+
+**Fase 4.3: Forwarding Integration**
+- Region filter in `shouldForward()` di main.cpp
+- TRANSPORT_FLOOD: check `regionMap.findMatch()` contro transport codes
+- Legacy FLOOD: check wildcard `REGION_DENY_FLOOD` flag
+- Default: forward everything (nessuna regione configurata = nessun filtro)
+
+**Fase 4.4: CLI Commands + Flash Optimization**
+- `region` — lista wildcard e entry con stato flood (A=allow, D=deny)
+- `region put/remove/allowf/denyf <name>` — gestione regioni (admin only)
+- Per liberare spazio Flash: wrapped `Serial.printf` in mesh/ headers con `#ifndef SILENT`,
+  compresso help text, rimossi alias CLI duplicati (~12 comandi)
+- Costo CLI: +744 B Flash (netto dopo ottimizzazioni: ~1,088 B liberati)
+
+**Alias rimossi (v0.8.0):**
+- `passwd` → usare `password`
+- `erase` → usare `reset`
+- `stats-radio` → usare `radiostats`
+- `stats-packets` → usare `packetstats`
+- `set repeat`/`get repeat` (getter) → usare `repeat`
+- `set advert.interval`/`get advert.interval` (getter) → usare `advert interval`
+- `get radio` → usare `radio`
+- `set tx`/`get tx` (getter) → usare `txpower`
+- `txpower auto on/off` → usare `set tx auto on/off`
+- `set name` (getter) → usare `get name` o `name`
+- `set guest.password` (serial) → usare `password guest`
+
+**Password syntax cambiata:**
+- Serial: `password admin <pw>` / `password guest <pw>`
+- Remote: `password <pw>` / `set guest.password <pw>` (invariato)
+
+### Ordine completato: Fase 0 -> 1 -> 2 -> 2.5 -> 3 -> 3.1 -> 3.2 -> 3.3 -> 3.4 -> 4
+
+---
+
 ## Riepilogo risorse finali
 
 | Fase | Flash | RAM | EEPROM | Note |
@@ -497,13 +548,14 @@ Floor 5dBm, ceiling MC_TX_POWER.
 | Fase 2.5 (Ottimiz) | -12,916 B | -368 B | 0 | Merge CLI, no float |
 | Fase 3 (Mailbox) | +1,752 B | +512 B | 172 B | 2 EEPROM + 4 RAM slots |
 | Fase 3.1 (Fix+Dedup) | +136 B | 0 | 0 | Session expiry, dedup, CLI fix |
-| Fase 3.2 (DIRECT+Health) | ~+200 B | 0 | 0 | DIRECT routing, health dashboard, loop prevention |
-| Fase 3.3 (SNR Delay) | ~+50 B | 0 | 0 | Lookup table 22B, nuove funzioni, RSSI threshold |
+| Fase 3.2 (DIRECT+Health) | ~+200 B | 0 | 0 | DIRECT routing, health dashboard |
+| Fase 3.3 (SNR Delay) | ~+50 B | 0 | 0 | Lookup table, RSSI threshold |
 | Fase 3.4 (QH+CB+ATX) | ~+1,200 B | +57 B | 0 | Quiet Hours, Circuit Breaker, Adaptive TX |
-| **Totale** | **~-7,882 B** | **-255 B** | **+172 B** | |
-| **Finale (stimato)** | **~120,798 B (92.1%)** | **7,905 B (48.3%)** | **512/512** | |
+| Fase 4 (Regions) | ~+1,064 B | +184 B | 0 | RegionMap, transport codes, CLI (-1,088 B ottimiz.) |
+| **Totale** | **~-6,818 B** | **-71 B** | **+172 B** | |
+| **Finale (misurato)** | **~130,144 B (99.3%)** | **~8,696 B (53.1%)** | **512/512** | |
 
-**Margine residuo**: ~10,274 B Flash liberi, 8,479 B RAM liberi
+**Margine residuo**: ~928 B Flash liberi, ~7,688 B RAM liberi
 
 ---
 
@@ -514,4 +566,5 @@ Floor 5dBm, ceiling MC_TX_POWER.
 - **Mailbox**: messaggio consegnato entro 30s dal ritorno del nodo destinatario
 - **Stabilita'**: zero regressioni sui 66 test firmware esistenti
 - **SNR Adaptive Delay**: DIRECT delay < FLOOD delay; SNR migliore = ritrasmissione piu' veloce; pacchetti sotto -120 dBm scartati
-- **Flash**: margine residuo ~11.4 KB dopo tutte le feature (era 2.3 KB pre-ottimizzazione)
+- **Region Filtering**: deny-based flood filtering compatibile con MeshCore 1.10.0+
+- **Flash**: margine residuo ~928 B dopo tutte le feature

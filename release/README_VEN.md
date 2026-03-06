@@ -69,8 +69,8 @@ Firmware par repeater MeshCore par el Heltec CubeCell HTCC-AB01.
 
 1. Flasha `firmware.cyacd` co CubeCellTool o PlatformIO
 2. Colegate la seriale a 115200 baud
-3. Meti le password: `passwd admin <pwd>` e dopo `save`
-4. Meti el nome: `name ElMeRepeater` e dopo `save`
+3. Meti le password: `password admin <pwd>` e `password guest <pwd>` e dopo `save`
+4. Meti el nome: `set name ElMeRepeater` e dopo `save`
 5. El nodo el scominsia a mandar ADVERT e a inoltrare pacchetti
 
 Varda `INSTALL.md` par le istrussioni detajae.

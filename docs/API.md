@@ -255,8 +255,8 @@ Automatic transmission power adjustment based on neighbour SNR:
 | `location clear` | Clear location |
 | `nodetype chat\|repeater` | Set node type |
 | `advert interval <sec>` | Set ADVERT interval (60-86400) |
-| `passwd admin <pw>` | Set admin password |
-| `passwd guest <pw>` | Set guest password |
+| `password admin <pw>` | Set admin password |
+| `password guest <pw>` | Set guest password |
 | `time <unix>` | Manually set time |
 
 ### Power Commands

@@ -238,11 +238,14 @@ struct RegionMap {
 - Legacy FLOOD: checks wildcard REGION_DENY_FLOOD flag
 - Default behavior: forward everything (no regions configured = no filtering)
 
-#### Phase 4: CLI Commands --- DEFERRED (Flash too full)
-- Needs ~400+ bytes Flash for CLI strings and strcmp calls
-- Only 584 bytes Flash remaining after Phase 1-3
-- Can be enabled when other features are trimmed or LITE_MODE saves more space
-- Planned commands: `region`, `region put`, `region remove`, `region allowf`, `region denyf`
+#### Phase 4: CLI Commands --- DONE
+- `region` — list wildcard and all entries with flood status (A=allow, D=deny)
+- `region put {name}` — add region entry (admin only)
+- `region remove {name}` — remove region entry (admin only)
+- `region allowf {name}` — allow flood for region or `*` (admin only)
+- `region denyf {name}` — deny flood for region or `*` (admin only)
+- Available via serial and remote CLI
+- **Cost:** ~744 bytes Flash (freed by optimizing debug output and CLI aliases)
 
 #### Phase 5: Testing
 - Transport code serialization/deserialization
@@ -263,10 +266,11 @@ struct RegionMap {
 | CLI commands (minimal) | ~600 bytes |
 | **Total** | **~1.5 KB** |
 
-After Phase 1-3, available Flash is ~584 bytes. Actual costs:
+After all phases, available Flash is ~928 bytes (99.3%). Actual costs:
 - Phase 1: DONE (+48 bytes Flash, +16 bytes RAM)
 - Phase 2-3: DONE (+272 bytes Flash, +168 bytes RAM)
-- Phase 4 (CLI): DEFERRED — needs ~400+ bytes, won't fit without freeing space
+- Phase 4: DONE (+744 bytes Flash)
+- Flash freed by optimizing debug output and CLI aliases: ~1,088 bytes
 
 ---
 

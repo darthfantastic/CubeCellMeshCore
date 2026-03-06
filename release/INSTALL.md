@@ -68,10 +68,10 @@ Connect at **115200 baud** to access the serial console.
 
 | Command | Description |
 |---------|-------------|
-| `name <name>` | Set node name (max 15 chars) |
-| `location <lat> <lon>` | Set GPS coordinates |
-| `passwd admin <pwd>` | Set admin password |
-| `passwd guest <pwd>` | Set guest password |
+| `set name <name>` | Set node name (max 15 chars) |
+| `set lat <lat>` / `set lon <lon>` | Set GPS coordinates |
+| `password admin <pwd>` | Set admin password |
+| `password guest <pwd>` | Set guest password |
 | `save` | Save config to EEPROM |
 | `reboot` | Restart device |
 
@@ -99,8 +99,8 @@ Connect at **115200 baud** to access the serial console.
 Default passwords are empty. Set them via serial console:
 
 ```
-passwd admin myAdminPassword
-passwd guest myGuestPassword
+password admin myAdminPassword
+password guest myGuestPassword
 save
 ```
 

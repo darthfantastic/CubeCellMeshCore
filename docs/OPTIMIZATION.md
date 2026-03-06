@@ -1,11 +1,13 @@
 # CubeCellMeshCore Memory Optimization Guide
 
 ## Current Status (After Optimizations)
-- **Flash**: 128,728 / 131,072 bytes (98.2%)
-- **RAM**: 8,136 / 16,384 bytes (49.7%)
-- **Available**: ~2,344 bytes Flash
+- **Flash**: ~130,144 / 131,072 bytes (99.3%)
+- **RAM**: ~8,696 / 16,384 bytes (53.1%)
+- **Available**: ~928 bytes Flash
 - **Daily Report**: Disabled via `#define ENABLE_DAILY_REPORT`
-- **Note**: RAM 49.7% is static only; ~4 KB free at runtime (incl. stack/heap)
+- **Note**: RAM 53.1% is static only; ~4 KB free at runtime (incl. stack/heap)
+- **Region system**: RegionMap (4 entries + wildcard) adds ~168 bytes RAM
+- **SILENT macro**: Wrapping Serial.printf in mesh/ headers freed ~344 bytes Flash
 
 ## Implemented Optimizations
 

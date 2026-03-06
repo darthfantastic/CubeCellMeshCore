@@ -75,8 +75,8 @@ MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 
 1. Flash `firmware.cyacd` via CubeCellTool or PlatformIO
 2. Connect serial at 115200 baud
-3. Set passwords: `passwd admin <pwd>` then `save`
-4. Set node name: `name MyRepeater` then `save`
+3. Set passwords: `password admin <pwd>` and `password guest <pwd>` then `save`
+4. Set node name: `set name MyRepeater` then `save`
 5. The node will start broadcasting ADVERTs and forwarding packets
 
 See `INSTALL.md` for detailed instructions.
