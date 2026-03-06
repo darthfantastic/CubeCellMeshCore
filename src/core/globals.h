@@ -42,6 +42,7 @@
 #include "../mesh/Repeater.h"    // Must be before Crypto.h (defines PERM_ACL_*)
 #include "../mesh/Crypto.h"
 #include "../mesh/Mailbox.h"
+#include "../mesh/RegionMap.h"
 
 //=============================================================================
 // Radio instance
@@ -243,6 +244,7 @@ extern MeshCrypto meshCrypto;
 extern ContactManager contactMgr;
 extern MessageCrypto msgCrypto;
 extern Mailbox mailbox;
+extern RegionMap regionMap;
 
 //=============================================================================
 // ISR callback

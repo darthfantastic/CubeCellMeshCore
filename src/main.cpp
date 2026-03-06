@@ -2169,6 +2169,23 @@ bool shouldForward(MCPacket* pkt) {
         return false;
     }
 
+    // Region filter for flood packets (MeshCore 1.10.0+)
+    if (isFlood) {
+        if (pkt->hasTransportCodes()) {
+            // TRANSPORT_FLOOD: check region map for matching transport code
+            if (regionMap.getCount() > 0) {
+                if (!regionMap.findMatch(pkt, REGION_DENY_FLOOD)) {
+                    return false;
+                }
+            }
+        } else {
+            // Legacy FLOOD: check wildcard entry
+            if (regionMap.getWildcard().flags & REGION_DENY_FLOOD) {
+                return false;
+            }
+        }
+    }
+
     // DIRECT routing: check if we are the next hop (path[0] == our hash)
     if (isDirect) {
         if (pkt->pathLen == 0) return false;

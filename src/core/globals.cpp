@@ -293,6 +293,7 @@ MeshCrypto meshCrypto;
 ContactManager contactMgr;
 MessageCrypto msgCrypto;
 Mailbox mailbox;
+RegionMap regionMap;
 
 //=============================================================================
 // ISR callback
