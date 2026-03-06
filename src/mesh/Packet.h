@@ -110,6 +110,7 @@ struct MCPacketHeader {
  */
 struct MCPacket {
     MCPacketHeader header;
+    uint16_t transport_codes[2];    // Region transport codes (4 bytes on wire)
     uint8_t pathLen;
     uint8_t payloadLen;
     uint8_t path[MC_MAX_PATH_SIZE];
@@ -120,23 +121,32 @@ struct MCPacket {
     int8_t snr;         // SNR * 4 for 0.25dB resolution
     int16_t rssi;
 
+    // Check if packet carries transport codes
+    inline bool hasTransportCodes() const {
+        uint8_t rt = header.getRouteType();
+        return (rt == MC_ROUTE_TRANSPORT_FLOOD || rt == MC_ROUTE_TRANSPORT_DIRECT);
+    }
+
     // Calculate total packet size for TX
-    // MeshCore format: [header 1B][pathLen 1B][path N B][payload M B]
-    // NOTE: payloadLen is NOT transmitted - it's derived from total length
+    // Wire format with transport codes:    [header 1B][tc 4B][pathLen 1B][path...][payload...]
+    // Wire format without transport codes: [header 1B][pathLen 1B][path...][payload...]
     inline uint16_t getTotalSize() const {
-        return 1 + 1 + pathLen + payloadLen;  // header + pathLen_byte + path + payload
+        return 1 + (hasTransportCodes() ? 4 : 0) + 1 + pathLen + payloadLen;
     }
 
     // Serialize packet to buffer for transmission
-    // MeshCore wire format: [header][pathLen][path...][payload...]
-    // IMPORTANT: payloadLen is NOT in the wire format - receiver calculates it
     uint16_t serialize(uint8_t* buf, uint16_t maxLen) const {
         if (getTotalSize() > maxLen) return 0;
 
         uint16_t pos = 0;
         buf[pos++] = header.raw;
+
+        if (hasTransportCodes()) {
+            memcpy(&buf[pos], &transport_codes[0], 2); pos += 2;
+            memcpy(&buf[pos], &transport_codes[1], 2); pos += 2;
+        }
+
         buf[pos++] = pathLen;
-        // NOTE: payloadLen is NOT transmitted in MeshCore protocol
 
         if (pathLen > 0) {
             memcpy(&buf[pos], path, pathLen);
@@ -152,19 +162,26 @@ struct MCPacket {
     }
 
     // Deserialize packet from received buffer
-    // MeshCore wire format: [header][pathLen][path...][payload...]
-    // payloadLen is calculated from total length minus header/path
     bool deserialize(const uint8_t* buf, uint16_t len) {
-        if (len < 2) return false;  // Minimum: header + pathLen
+        if (len < 2) return false;
 
         uint16_t pos = 0;
         header.raw = buf[pos++];
+
+        // Read transport codes if present
+        if (hasTransportCodes()) {
+            if (pos + 4 > len) return false;
+            memcpy(&transport_codes[0], &buf[pos], 2); pos += 2;
+            memcpy(&transport_codes[1], &buf[pos], 2); pos += 2;
+        } else {
+            transport_codes[0] = 0;
+            transport_codes[1] = 0;
+        }
+
+        if (pos >= len) return false;
         pathLen = buf[pos++];
 
-        // Validate path length
         if (pathLen > MC_MAX_PATH_SIZE) return false;
-
-        // Check if we have enough data for path
         if (pos + pathLen > len) return false;
 
         if (pathLen > 0) {
@@ -172,8 +189,7 @@ struct MCPacket {
             pos += pathLen;
         }
 
-        // Payload is everything remaining after path
-        // This is how MeshCore determines payload length
+        // Payload is everything remaining
         uint16_t availablePayload = len - pos;
         if (availablePayload > MC_MAX_PAYLOAD_SIZE) {
             availablePayload = MC_MAX_PAYLOAD_SIZE;
@@ -182,7 +198,6 @@ struct MCPacket {
 
         if (payloadLen > 0) {
             memcpy(payload, &buf[pos], payloadLen);
-            pos += payloadLen;
         }
 
         return true;
@@ -191,6 +206,8 @@ struct MCPacket {
     // Clear packet
     void clear() {
         header.raw = 0;
+        transport_codes[0] = 0;
+        transport_codes[1] = 0;
         pathLen = 0;
         payloadLen = 0;
         rxTime = 0;
