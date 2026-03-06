@@ -233,24 +233,24 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP("%ld.%06ld,%ld.%06ld\n", lat/1000000, abs(lat%1000000), lon/1000000, abs(lon%1000000));
         } else CP("No loc\n");
     }
-    else if (strcmp(cmd, "repeat") == 0 || strcmp(cmd, "set repeat") == 0 || strcmp(cmd, "get repeat") == 0) {
+    else if (strcmp(cmd, "repeat") == 0) {
         CP("Rpt:%s hops:%d\n", repeaterHelper.isRepeatEnabled() ? "on" : "off", repeaterHelper.getMaxFloodHops());
     }
-    else if (strcmp(cmd, "advert interval") == 0 || strcmp(cmd, "set advert.interval") == 0 || strcmp(cmd, "get advert.interval") == 0) {
+    else if (strcmp(cmd, "advert interval") == 0) {
         CP("Int:%lum next:%lus\n", advertGen.getInterval() / 60000, advertGen.getTimeUntilNext());
     }
-    else if (strcmp(cmd, "radiostats") == 0 || strcmp(cmd, "stats-radio") == 0) {
+    else if (strcmp(cmd, "radiostats") == 0) {
         const RadioStats& rs = repeaterHelper.getRadioStats();
         CP("Noise:%ddBm RSSI:%d SNR:%d.%ddB\n", rs.noiseFloor, rs.lastRssi, rs.lastSnr/4, abs(rs.lastSnr%4)*25);
         CP("Airtime TX:%lus RX:%lus\n", rs.txAirTimeSec, rs.rxAirTimeSec);
     }
-    else if (strcmp(cmd, "packetstats") == 0 || strcmp(cmd, "stats-packets") == 0) {
+    else if (strcmp(cmd, "packetstats") == 0) {
         const PacketStats& ps = repeaterHelper.getPacketStats();
         CP("RX:%lu TX:%lu FL:%lu/%lu DR:%lu/%lu\n",
             ps.numRecvPackets, ps.numSentPackets,
             ps.numRecvFlood, ps.numSentFlood, ps.numRecvDirect, ps.numSentDirect);
     }
-    else if (strcmp(cmd, "radio") == 0 || strcmp(cmd, "get radio") == 0) {
+    else if (strcmp(cmd, "radio") == 0) {
         { uint32_t fM = (uint32_t)(MC_FREQUENCY * 1000); uint32_t bT = (uint32_t)(MC_BANDWIDTH * 10);
         CP("%lu.%03lu BW%lu.%lu SF%d CR%d %ddBm\n", fM/1000, fM%1000, bT/10, bT%10, MC_SPREADING, MC_CODING_RATE, MC_TX_POWER); }
         if (tempRadioActive) {
@@ -354,7 +354,7 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "cb") == 0) {
         CP("CB:%d\n", repeaterHelper.getNeighbours().getCircuitBreakerCount());
     }
-    else if (strcmp(cmd, "txpower") == 0 || strcmp(cmd, "set tx") == 0 || strcmp(cmd, "get tx") == 0) {
+    else if (strcmp(cmd, "txpower") == 0) {
         CP("TxP:%ddBm max:%d auto:%s\n", repeaterHelper.getCurrentTxPower(),
             MC_TX_POWER, repeaterHelper.isAdaptiveTxEnabled() ? "on" : "off");
     }
@@ -501,7 +501,7 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             CP("name=%s\n", n);
         } else CP("E:1-15\n");
     }
-    else if (strcmp(cmd, "set name") == 0 || strcmp(cmd, "name") == 0) {
+    else if (strcmp(cmd, "name") == 0) {
         CP("Name:%s\n", nodeIdentity.getNodeName());
     }
     else if (strncmp(cmd, "set lat ", 8) == 0) {
@@ -644,10 +644,10 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
             } else CP("E:quiet <start> <end>\n");
         }
     }
-    else if (strcmp(cmd, "set tx auto on") == 0 || strcmp(cmd, "txpower auto on") == 0) {
+    else if (strcmp(cmd, "set tx auto on") == 0) {
         repeaterHelper.setAdaptiveTxEnabled(true); CP("TxP auto:on\n");
     }
-    else if (strcmp(cmd, "set tx auto off") == 0 || strcmp(cmd, "txpower auto off") == 0) {
+    else if (strcmp(cmd, "set tx auto off") == 0) {
         repeaterHelper.setAdaptiveTxEnabled(false);
         repeaterHelper.setTxPower(MC_TX_POWER);
         radio.setOutputPower(MC_TX_POWER);
@@ -780,7 +780,7 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "save") == 0) {
         saveConfig(); CP("saved\n");
     }
-    else if (strcmp(cmd, "reset") == 0 || strcmp(cmd, "erase") == 0) {
+    else if (strcmp(cmd, "reset") == 0) {
         resetConfig(); applyPowerSettings(); CP("reset\n");
     }
     else if (strcmp(cmd, "reboot") == 0) {
@@ -789,6 +789,26 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (strcmp(cmd, "clkreboot") == 0) {
         timeSync = TimeSync();
         CP("clkreboot\n");
+    }
+    // Region commands (MeshCore 1.10.0+)
+    else if (strcmp(cmd, "region") == 0) {
+        CP("*:%c\n", (regionMap.getWildcard().flags & REGION_DENY_FLOOD) ? 'D' : 'A');
+        for (uint8_t i = 0; i < regionMap.getCount(); i++) {
+            const RegionEntry* e = regionMap.getEntry(i);
+            CP("%s:%c\n", e->name, (e->flags & REGION_DENY_FLOOD) ? 'D' : 'A');
+        }
+    }
+    else if (isAdmin && strncmp(cmd, "region put ", 11) == 0) {
+        CP(regionMap.put(cmd + 11) ? "OK\n" : "ERR\n");
+    }
+    else if (isAdmin && strncmp(cmd, "region remove ", 14) == 0) {
+        CP(regionMap.remove(cmd + 14) ? "OK\n" : "ERR\n");
+    }
+    else if (isAdmin && strncmp(cmd, "region allowf ", 14) == 0) {
+        CP(regionMap.allowFlood(cmd + 14) ? "OK\n" : "ERR\n");
+    }
+    else if (isAdmin && strncmp(cmd, "region denyf ", 13) == 0) {
+        CP(regionMap.denyFlood(cmd + 13) ? "OK\n" : "ERR\n");
     }
     else {
         return false;  // command not handled
@@ -820,13 +840,9 @@ void processCommand(char* cmd) {
 
     // Serial-only commands
     if (strcmp(cmd, "?") == 0 || strcmp(cmd, "help") == 0) {
-        LOG_RAW("status stats lifetime radiostats packetstats advert nodes contacts\n\r"
-                "neighbours telemetry identity location time ver clock nodetype\n\r"
-                "password set guest.password set name set lat set lon set tx\n\r"
-                "set advert.interval set radio set repeat set flood.max\n\r"
-                "powersaving mode sleep rxboost radio tempradio ratelimit\n\r"
-                "savestats alert newid power acl ping trace rssi report health\n\r"
-                "clear stats neighbor.remove mailbox erase reset save reboot\n\r");
+        LOG_RAW("status stats nodes neighbours ver time advert radio\n\r"
+                "set name|lat|lon|tx|repeat|flood.max|radio\n\r"
+                "password region acl save reset reboot\n\r");
     }
     else if (strcmp(cmd, "newid") == 0) {
         LOG_RAW("Gen new ID...\n\r");
@@ -910,25 +926,17 @@ void processCommand(char* cmd) {
         nodeIdentity.setFlags(flags); nodeIdentity.save();
         LOG_RAW("Type: RPT 0x%02X\n\r", flags);
     }
-    else if (strcmp(cmd, "password") == 0 || strcmp(cmd, "passwd") == 0) {
-        LOG_RAW("Admin: %s  Guest: %s\n\r",
+    else if (strcmp(cmd, "password") == 0) {
+        LOG_RAW("A:%s G:%s\n\r",
             sessionManager.getAdminPassword(), sessionManager.getGuestPassword());
     }
-    else if (strncmp(cmd, "password ", 9) == 0) {
-        sessionManager.setAdminPassword(cmd + 9); saveConfig();
-        LOG_RAW("Admin pwd: %s\n\r", cmd + 9);
+    else if (strncmp(cmd, "password admin ", 15) == 0) {
+        sessionManager.setAdminPassword(cmd + 15); saveConfig();
+        LOG_RAW("A:%s\n\r", cmd + 15);
     }
-    else if (strncmp(cmd, "passwd admin ", 13) == 0) {
-        sessionManager.setAdminPassword(cmd + 13); saveConfig();
-        LOG_RAW("Admin pwd: %s\n\r", cmd + 13);
-    }
-    else if (strncmp(cmd, "set guest.password ", 19) == 0) {
-        sessionManager.setGuestPassword(cmd + 19); saveConfig();
-        LOG_RAW("Guest pwd: %s\n\r", cmd + 19);
-    }
-    else if (strncmp(cmd, "passwd guest ", 13) == 0) {
-        sessionManager.setGuestPassword(cmd + 13); saveConfig();
-        LOG_RAW("Guest pwd: %s\n\r", cmd + 13);
+    else if (strncmp(cmd, "password guest ", 15) == 0) {
+        sessionManager.setGuestPassword(cmd + 15); saveConfig();
+        LOG_RAW("G:%s\n\r", cmd + 15);
     }
     else if (strcmp(cmd, "savestats") == 0) {
         savePersistentStats(); LOG_RAW("Stats saved\n\r");

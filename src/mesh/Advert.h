@@ -421,8 +421,10 @@ private:
                 appdata[pos++] = (lon >> 16) & 0xFF;
                 appdata[pos++] = (lon >> 24) & 0xFF;
 
-                Serial.printf("[DEBUG] ADVERT location: %ld.%06ld, %ld.%06ld\n\r",
+                #ifndef SILENT
+                Serial.printf("[ADV] loc:%ld.%06ld,%ld.%06ld\n\r",
                               lat/1000000, abs(lat%1000000), lon/1000000, abs(lon%1000000));
+                #endif
             }
 
             // Name

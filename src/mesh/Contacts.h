@@ -150,10 +150,6 @@ public:
             contacts[slot].name[MC_CONTACT_NAME_MAX - 1] = '\0';
         }
 
-        Serial.printf("[CONTACT] Added: %s (hash=%02X)\n\r",
-                      contacts[slot].name[0] ? contacts[slot].name : "Unknown",
-                      hash);
-
         return &contacts[slot];
     }
 
@@ -370,7 +366,6 @@ public:
 
         // Verify ciphertext is block-aligned
         if (ciphertextLen % MC_AES_BLOCK_SIZE != 0) {
-            Serial.printf("[CRYPTO] Error: ciphertext not block-aligned\n\r");
             return 0;
         }
 
@@ -382,7 +377,6 @@ public:
 
         // Verify MAC (first 2 bytes)
         if (input[0] != mac[0] || input[1] != mac[1]) {
-            Serial.printf("[CRYPTO] MAC verification failed\n\r");
             return 0;
         }
 
