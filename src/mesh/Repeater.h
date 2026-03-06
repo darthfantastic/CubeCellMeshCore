@@ -172,6 +172,11 @@ struct NeighbourInfo {
     uint32_t lastHeard;         // millis() when last heard
     int8_t snr;                 // SNR * 4
     int16_t rssi;               // RSSI in dBm
+    int16_t rssiAvg;            // RSSI EMA (exponential moving average)
+    int8_t snrAvg;              // SNR EMA * 4
+    uint16_t pktCount;          // Total packets heard from this neighbour
+    uint16_t pktCountWindow;    // Packets heard in current window (for loss calc)
+    uint32_t windowStartTime;   // Start of current measurement window
     bool valid;                 // Entry is valid
     uint8_t cbState;            // Circuit breaker: 0=closed, 1=open, 2=half-open
 
@@ -180,6 +185,11 @@ struct NeighbourInfo {
         lastHeard = 0;
         snr = 0;
         rssi = 0;
+        rssiAvg = 0;
+        snrAvg = 0;
+        pktCount = 0;
+        pktCountWindow = 0;
+        windowStartTime = 0;
         valid = false;
         cbState = CB_STATE_CLOSED;
     }
@@ -259,6 +269,27 @@ public:
                 neighbours[i].lastHeard = now;
                 neighbours[i].snr = snr;
                 neighbours[i].rssi = rssi;
+                neighbours[i].pktCount++;
+                neighbours[i].pktCountWindow++;
+
+                // Update EMA for RSSI and SNR (alpha = 0.125, shift-based)
+                if (neighbours[i].rssiAvg == 0) {
+                    neighbours[i].rssiAvg = rssi;  // First sample
+                    neighbours[i].snrAvg = snr;
+                } else {
+                    // EMA: new = old * 0.875 + sample * 0.125
+                    neighbours[i].rssiAvg = (int16_t)(((int32_t)neighbours[i].rssiAvg * 7 + rssi) / 8);
+                    neighbours[i].snrAvg = (int8_t)(((int16_t)neighbours[i].snrAvg * 7 + snr) / 8);
+                }
+
+                // Reset window every 60 seconds for packet loss tracking
+                if (neighbours[i].windowStartTime == 0) {
+                    neighbours[i].windowStartTime = now;
+                } else if (now - neighbours[i].windowStartTime > 60000) {
+                    neighbours[i].pktCountWindow = 0;
+                    neighbours[i].windowStartTime = now;
+                }
+
                 // Circuit breaker: update state based on SNR
                 if (snr < CB_SNR_THRESHOLD) {
                     if (neighbours[i].cbState == CB_STATE_CLOSED)
@@ -298,7 +329,13 @@ public:
         neighbours[slot].lastHeard = now;
         neighbours[slot].snr = snr;
         neighbours[slot].rssi = rssi;
+        neighbours[slot].rssiAvg = rssi;  // Initialize EMA with first sample
+        neighbours[slot].snrAvg = snr;
+        neighbours[slot].pktCount = 1;
+        neighbours[slot].pktCountWindow = 1;
+        neighbours[slot].windowStartTime = now;
         neighbours[slot].valid = true;
+        neighbours[slot].cbState = CB_STATE_CLOSED;
 
         if (slot >= count) count = slot + 1;
         return true;  // New neighbor

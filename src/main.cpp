@@ -191,7 +191,7 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
         for (uint8_t i = 0; i < cnt; i++) {
             const NeighbourInfo* n = nb.getNeighbour(i);
             if (n) {
-                if (ctx.buf && ctx.len >= ctx.maxLen - 48) break;
+                if (ctx.buf && ctx.len >= ctx.maxLen - 80) break;
                 uint32_t ago = (millis() - n->lastHeard) / 1000;
                 // Resolve name from SeenNodesTracker via hash (pubKeyPrefix[0])
                 const char* name = "-";
@@ -202,9 +202,13 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
                     }
                 }
                 const char* cb = n->cbState == 0 ? "ok" : (n->cbState == 1 ? "OPEN" : "half");
-                CP(" %02X %s %ddBm s:%d.%ddB cb:%s %lus\n",
+                // Show current and average values + packet count
+                CP(" %02X %s %ddBm(%d) s:%d.%d(%d.%d)dB p:%u cb:%s %lus\n",
                     n->pubKeyPrefix[0], name,
-                    n->rssi, n->snr/4, abs(n->snr%4)*25, cb, ago);
+                    n->rssi, n->rssiAvg,
+                    n->snr/4, abs(n->snr%4)*25,
+                    n->snrAvg/4, abs(n->snrAvg%4)*25,
+                    n->pktCount, cb, ago);
             }
         }
     }
