@@ -6,6 +6,7 @@
  */
 
 #include "globals.h"
+#include "Config.h"  // For LOOP_DETECT_* constants
 
 // CubeCell specific includes for radio
 #ifdef CUBECELL
