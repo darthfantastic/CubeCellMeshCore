@@ -195,6 +195,25 @@ MIT License - See LICENSE file for details.
 
 ## Changelog
 
+### v0.7.0 (2026-03-06)
+- **Enhanced Link Quality Statistics** - RSSI/SNR exponential moving averages (EMA)
+  - New metrics: `rssiAvg`, `snrAvg`, `pktCount`, `pktCountWindow` per neighbour
+  - 60-second measurement windows for packet rate tracking
+  - Updated `neighbours` command shows current and average values
+  - Base for future intelligent routing algorithms
+- **Adaptive TX Power** - Automatic power adjustment based on neighbour SNR
+  - Reduces power when SNR > +10dB (energy saving)
+  - Increases power when SNR < -5dB (better coverage)
+  - Range: 5-21 dBm, 2 dBm steps, evaluated every 60 seconds
+  - Commands: `set tx auto on/off`, `txpower auto on/off`, `txpower <5-21>`
+  - Enabled via serial CLI, disabled by default
+- **Packet Deduplication** - Already implemented, documented
+  - 32-slot ring buffer cache prevents duplicate forwarding
+  - Automatic duplicate detection based on packet ID hash
+  - Reduces network congestion and prevents loops
+- **Test Suite** - New verification script `tools/test_adaptive_tx.py`
+- See [FEATURES_ADDED.md](FEATURES_ADDED.md) for detailed documentation
+
 ### v0.6.0 (2026-03-06)
 - **Loop Detection System** - MeshCore 1.14 compatible configurable loop detection
   - Four modes: `off`, `minimal` (4+ occurrences), `moderate` (2+), `strict` (1, default)

@@ -102,6 +102,31 @@ included from multiple compilation units.
 - Appdata format: `[flags][location?][name]`
 - Self-verification of signatures
 
+#### Repeater.h
+- Neighbour tracking with enhanced link quality statistics **(v0.7.0+)**
+- Adaptive TX power control **(v0.7.0+)**
+- Rate limiting (login, request, forward)
+- Circuit breaker for degraded links
+- Statistics tracking (RX/TX/FWD, radio metrics)
+- ACL (Access Control List) management
+
+**v0.7.0 Enhancements:**
+- **NeighbourInfo**: Extended with RSSI/SNR exponential moving averages (EMA)
+  - `rssiAvg`, `snrAvg`: Smoothed values (alpha=0.125)
+  - `pktCount`, `pktCountWindow`: Total and windowed packet counting
+  - Enables link quality monitoring and packet loss estimation
+- **Adaptive TX Power**: Automatic power adjustment (5-21 dBm)
+  - Evaluates every 60 seconds based on average neighbour SNR
+  - Reduces power when SNR > +10dB (energy saving)
+  - Increases power when SNR < -5dB (better coverage)
+  - 2 dBm step size for gradual adaptation
+
+#### Contacts.h
+- Contact database with Ed25519 public keys
+- Name-to-pubkey resolution
+- RSSI/SNR tracking per contact
+- Used for direct messaging and encryption
+
 ### Ed25519 Library (lib/ed25519/)
 
 Custom implementation optimized for CubeCell:

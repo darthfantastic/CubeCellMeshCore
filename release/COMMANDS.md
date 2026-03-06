@@ -1,4 +1,4 @@
-# CubeCellMeshCore v0.5.3 - Command Reference
+# CubeCellMeshCore v0.7.0 - Command Reference
 
 Serial console at 115200 baud. Type `help` for command list.
 
@@ -118,7 +118,7 @@ Example with timeout: `set radio 869.618,62.5,8,8,30` (reverts after 30 minutes)
 |---------|-------------|
 | `set tx` | Show current TX power and auto status **MeshCore** |
 | `set tx <dBm>` | Set manual TX power (disables auto) **MeshCore** |
-| `set tx auto on` | Enable adaptive TX power **MeshCore** |
+| `set tx auto on` | Enable adaptive TX power **(v0.7.0+)** **MeshCore** |
 | `set tx auto off` | Disable auto, restore max power **MeshCore** |
 
 ### Legacy TX power aliases (still supported)
@@ -129,6 +129,28 @@ Example with timeout: `set radio 869.618,62.5,8,8,30` (reverts after 30 minutes)
 | `txpower <dBm>` | `set tx <dBm>` |
 | `txpower auto on` | `set tx auto on` |
 | `txpower auto off` | `set tx auto off` |
+
+### Adaptive TX Power (v0.7.0+)
+
+Automatic transmission power adjustment based on neighbour link quality:
+
+- **Enabled**: `set tx auto on` or `txpower auto on`
+- **Disabled**: `set tx auto off` or `txpower auto off`
+- **Manual**: `set tx 14` (sets 14 dBm, disables auto)
+- **Status**: `set tx` or `txpower` shows: `TxP:14dBm max:21 auto:on`
+
+**How it works:**
+- Evaluates every 60 seconds
+- Calculates average SNR of all neighbours
+- If avg SNR > +10dB: **Reduces** power by 2 dBm (energy saving)
+- If avg SNR < -5dB: **Increases** power by 2 dBm (better coverage)
+- Range: 5 dBm (minimum) to 21 dBm (maximum, hardware limit)
+- Step size: 2 dBm
+
+**Benefits:**
+- Energy saving when signal is strong
+- Automatic coverage optimization when signal is weak
+- Reduced interference on the mesh network
 
 ## ADVERT & Network
 
@@ -228,8 +250,25 @@ Blocks DIRECT forwarding to neighbours with degraded links (SNR < -10dB). After 
 
 | Command | Description |
 |---------|-------------|
-| `neighbours` / `neighbors` | List direct repeater neighbours |
+| `neighbours` / `neighbors` | List direct repeater neighbours with link quality statistics **(v0.7.0+)** |
 | `neighbor.remove <hex>` | Remove neighbour by pubkey hex prefix **MeshCore** |
+
+**v0.7.0+**: The `neighbours` command now shows enhanced link quality metrics:
+- **Current and Average RSSI/SNR**: Compare instantaneous vs smoothed values (EMA)
+- **Packet Count**: Total packets received from each neighbour
+- **Circuit Breaker State**: Link health indicator (ok/OPEN/half)
+
+Example output:
+```
+Nbr:2
+ A3 Node1 -82dBm(-84) s:9.0(8.5)dB p:156 cb:ok 5s
+ F7 Node2 -95dBm(-93) s:3.5(4.0)dB p:89 cb:ok 12s
+```
+Where:
+- `-82dBm(-84)` = Current RSSI (Average RSSI)
+- `s:9.0(8.5)dB` = Current SNR (Average SNR)
+- `p:156` = Total packets received
+- `cb:ok` = Circuit breaker state
 
 ## Rate Limiting
 

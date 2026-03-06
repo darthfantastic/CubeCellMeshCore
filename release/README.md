@@ -1,19 +1,36 @@
-# CubeCellMeshCore v0.5.0
+# CubeCellMeshCore v0.7.0
 
 MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 
-## What's New in v0.5.0
+## What's New in v0.7.0
 
-- **DIRECT Routing Support** - Full support for DIRECT routed packets (path peeling). Fixes message forwarding between companion nodes through the repeater. Previously only FLOOD packets were forwarded.
-- **Store-and-Forward Mailbox** - Messages for offline nodes are stored and automatically re-delivered when the node comes back online. 2 persistent EEPROM slots + 4 volatile RAM slots. Deduplication prevents storing the same packet from multiple repeaters.
-- **System Health Dashboard** - `health` command shows system vitals (uptime, battery, sync), network status (online/offline count), subsystem status (mailbox, rate limiting, errors), and flags only problematic nodes.
-- **Full Remote Configuration** - All 50+ CLI commands available remotely via the MeshCore app's encrypted channel. No USB cable needed to manage a deployed repeater.
-- **Session Security** - Idle sessions now expire after 1 hour.
-- **Loop Prevention** - FLOOD forwarding now checks if our hash is already in the path to prevent routing loops.
-- **Major Code Optimization** - Merged duplicate CLI handlers and eliminated float parsing. Saved 12.9 KB Flash (was 98.2%, now 91.0%).
-- **Quiet Hours** - Configurable night-time rate limiting (e.g., 22:00-06:00) reduces forward rate from 100 to 30 packets/min. Saves battery during low-traffic periods.
-- **Circuit Breaker** - Automatically blocks DIRECT forwarding to neighbours with degraded links (SNR < -10dB). Auto-recovers after 5 min or on good SNR. FLOOD unaffected.
-- **Adaptive TX Power** - Dynamically adjusts transmit power (5-14 dBm) based on average neighbour SNR. Reduces power when signal is strong, increases when weak.
+- **Enhanced Link Quality Statistics** - RSSI/SNR exponential moving averages (EMA) per neighbour
+  - New metrics: `rssiAvg`, `snrAvg`, `pktCount`, `pktCountWindow`
+  - 60-second measurement windows for packet rate tracking
+  - Updated `neighbours` command shows current and average values
+  - Enables link degradation detection and intelligent routing decisions
+- **Adaptive TX Power** - Fully documented automatic power adjustment system
+  - Evaluates every 60 seconds based on average neighbour SNR
+  - SNR > +10dB → Reduces power by 2 dBm (energy saving)
+  - SNR < -5dB → Increases power by 2 dBm (better coverage)
+  - Range: 5-21 dBm with 2 dBm steps
+  - Commands: `set tx auto on/off`, `txpower auto on/off`, `txpower <5-21>`
+- **Packet Deduplication** - Documented existing 32-slot ring buffer cache
+  - Prevents duplicate packet forwarding automatically
+  - Reduces network congestion and prevents loops
+- **Test Suite** - New verification script `tools/test_adaptive_tx.py`
+- See [FEATURES_ADDED.md](../FEATURES_ADDED.md) for detailed documentation
+
+## Previous Features (v0.5.0-v0.6.0)
+
+- **DIRECT Routing Support** - Full support for DIRECT routed packets (path peeling)
+- **Store-and-Forward Mailbox** - 2 persistent EEPROM + 4 volatile RAM slots
+- **System Health Dashboard** - `health` command with vitals and problem nodes
+- **Full Remote Configuration** - 50+ CLI commands via encrypted mesh channel
+- **Loop Detection System** - Configurable modes: off, minimal, moderate, strict
+- **Max Hops Filter** - Auto-add contacts limited by hop count (0=no limit)
+- **Quiet Hours** - Night-time rate limiting for battery savings
+- **Circuit Breaker** - Blocks DIRECT forwarding to degraded neighbours
 
 ## Features
 
@@ -21,14 +38,18 @@ MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 - Ed25519 identity and signatures
 - ADVERT broadcasting with time synchronization
 - SNR-based CSMA/CA packet forwarding
+- **Enhanced link quality tracking with EMA** (v0.7.0+)
+- **Adaptive TX power (5-21 dBm)** (v0.7.0+)
+- **Packet deduplication cache** (documented v0.7.0+)
 - Store-and-forward mailbox for offline nodes
 - Mesh health monitoring with automatic alerts
 - Full remote configuration via encrypted mesh CLI
 - Daily status reports sent to admin
 - Deep sleep support (~20 uA)
 - Battery and temperature telemetry
-- Neighbour tracking (direct 0-hop repeaters)
+- Neighbour tracking with quality statistics
 - Rate limiting (login, request, forward)
+- Circuit breaker for degraded links
 - Persistent lifetime statistics (EEPROM)
 
 ## Hardware

@@ -143,6 +143,95 @@ class ContactManager {
 };
 ```
 
+### Repeater (mesh/Repeater.h)
+
+```cpp
+struct NeighbourInfo {
+    uint8_t pubKeyPrefix[6];    // First 6 bytes of public key
+    uint32_t lastHeard;         // millis() when last heard
+    int8_t snr;                 // SNR * 4 (current)
+    int16_t rssi;               // RSSI in dBm (current)
+    int16_t rssiAvg;            // RSSI EMA (exponential moving average)
+    int8_t snrAvg;              // SNR EMA * 4
+    uint16_t pktCount;          // Total packets heard from this neighbour
+    uint16_t pktCountWindow;    // Packets heard in current 60s window
+    uint32_t windowStartTime;   // Start of current measurement window
+    bool valid;                 // Entry is valid
+    uint8_t cbState;            // Circuit breaker state (0=closed, 1=open, 2=half-open)
+};
+
+class NeighbourTracker {
+    bool update(const uint8_t* pubKey, int8_t snr, int16_t rssi);
+    uint8_t getCount();
+    const NeighbourInfo* getNeighbour(uint8_t idx);
+    void cleanExpired();        // Remove stale entries (>1h)
+    bool isCircuitOpen(uint8_t hash);
+    uint8_t getCircuitBreakerCount();
+    bool removeByPrefix(const uint8_t* prefix, uint8_t len);
+};
+
+class RepeaterHelper {
+    void begin(IdentityManager* id);
+    NeighbourTracker& getNeighbours();
+    ACLManager& getACL();
+
+    // Forwarding control
+    bool isRepeatEnabled();
+    void setRepeatEnabled(bool en);
+    uint8_t getMaxFloodHops();
+    void setMaxFloodHops(uint8_t hops);
+
+    // Rate limiting
+    bool isRateLimitEnabled();
+    void setRateLimitEnabled(bool en);
+    bool allowLogin();
+    bool allowRequest();
+    bool allowForward();
+
+    // Statistics
+    void recordRx(bool isFlood);
+    void recordTx(bool isFlood);
+    void updateRadioStats(int8_t rssi, int8_t snr);
+    const RadioStats& getRadioStats();
+    const PacketStats& getPacketStats();
+
+    // Adaptive TX Power (v0.7.0+)
+    int8_t getCurrentTxPower();
+    bool isAdaptiveTxEnabled();
+    void setAdaptiveTxEnabled(bool en);
+    void setTxPower(int8_t power);
+    int8_t evaluateAdaptiveTxPower(); // Returns new power or -1 if no change
+
+    // Cleanup
+    void cleanup();
+};
+```
+
+#### Link Quality Statistics (v0.7.0+)
+
+The `NeighbourInfo` struct now tracks enhanced link quality metrics:
+
+- **Exponential Moving Average (EMA)**: `rssiAvg` and `snrAvg` provide smoothed values using EMA with alpha=0.125
+- **Packet Counting**: `pktCount` tracks total packets received from each neighbour
+- **Windowed Metrics**: `pktCountWindow` tracks packets in the current 60-second window for rate calculation
+- **Formula**: `new_avg = old_avg * 0.875 + current * 0.125`
+
+This enables:
+- Detection of link degradation (comparing current vs average)
+- Packet loss estimation (via window counting)
+- Intelligent routing decisions based on link stability
+
+#### Adaptive TX Power (v0.7.0+)
+
+Automatic transmission power adjustment based on neighbour SNR:
+
+- **Evaluation**: Every 60 seconds in main loop
+- **Algorithm**:
+  - Average SNR > +10dB → Reduce power by 2dBm (energy saving)
+  - Average SNR < -5dB → Increase power by 2dBm (better coverage)
+- **Range**: 5 dBm (minimum) to 21 dBm (maximum, hardware limit)
+- **Control**: Via `set tx auto on/off` or `txpower auto on/off`
+
 ## Serial Commands
 
 ### Basic Commands
