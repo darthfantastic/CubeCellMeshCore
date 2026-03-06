@@ -208,6 +208,10 @@ MIT License - See LICENSE file for details.
   - Default: 0 (no limit, backward compatible)
   - Reduces contact list pollution from distant nodes
   - Test script: `tools/test_autoadd_maxhops.py`
+- **Bug Fix: millis() Wraparound Handling** - Fixes scheduler issues after ~49.7 days uptime
+  - Fixed timer comparisons in pendingAdvertTime, tempRadioExpireTime, and rebootTime
+  - Uses signed subtraction to correctly handle millis() wraparound
+  - Prevents scheduled tasks from getting stuck when millis() wraps around
 
 ### v0.5.2 (2026-02-15)
 - **Extended MeshCore CLI** - 23 new commands for full MeshCore standard compatibility

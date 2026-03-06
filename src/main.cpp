@@ -2104,7 +2104,8 @@ void healthCheck() {
 
 void checkAdvertBeacon() {
     // Check for pending ADVERT after time sync
-    if (pendingAdvertTime > 0 && millis() >= pendingAdvertTime) {
+    // Use signed subtraction to handle millis() wraparound correctly
+    if (pendingAdvertTime > 0 && (int32_t)(millis() - pendingAdvertTime) >= 0) {
         pendingAdvertTime = 0;  // Clear pending
         LOG(TAG_ADVERT " Sched ADV post-sync\n\r");
         sendAdvert(true);
@@ -3241,7 +3242,8 @@ void loop() {
     feedWatchdog();
 
     // Auto-expire temporary radio settings
-    if (tempRadioActive && tempRadioExpireTime > 0 && millis() >= tempRadioExpireTime) {
+    // Use signed subtraction to handle millis() wraparound correctly
+    if (tempRadioActive && tempRadioExpireTime > 0 && (int32_t)(millis() - tempRadioExpireTime) >= 0) {
         tempRadioActive = false;
         tempRadioExpireTime = 0;
         setupRadio(); startReceive(); calculateTimings();
@@ -3258,7 +3260,8 @@ void loop() {
     }
 
     // Handle pending reboot from CLI command
-    if (pendingReboot && millis() >= rebootTime) {
+    // Use signed subtraction to handle millis() wraparound correctly
+    if (pendingReboot && (int32_t)(millis() - rebootTime) >= 0) {
         LOG(TAG_SYSTEM " Rebooting...\n\r");
         delay(100);  // Let serial flush
         HW_Reset(0);
