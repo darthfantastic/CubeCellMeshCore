@@ -50,14 +50,15 @@ MeshCore-compatible repeater firmware for Heltec CubeCell HTCC-AB01.
 - Neighbour tracking with quality statistics
 - Rate limiting (login, request, forward)
 - Circuit breaker for degraded links
+- Region-based flood filtering (MeshCore 1.10.0+ compatible)
 - Persistent lifetime statistics (EEPROM)
 
 ## Hardware
 
 - **Board**: Heltec CubeCell HTCC-AB01
 - **MCU**: ASR6501 (ARM Cortex-M0+ @ 48 MHz + SX1262)
-- **Flash**: 128 KB (92.5% used, ~10 KB free)
-- **RAM**: 16 KB (47.9% used)
+- **Flash**: 128 KB (99.8% used, ~256 bytes free)
+- **RAM**: 16 KB (53.1% used)
 - **Radio**: SX1262 LoRa (EU868: 869.618 MHz, BW 62.5 kHz, SF8, CR 4/8)
 
 ## Files Included

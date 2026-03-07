@@ -1,9 +1,9 @@
 # CubeCellMeshCore Memory Optimization Guide
 
 ## Current Status (After Optimizations)
-- **Flash**: ~130,144 / 131,072 bytes (99.3%)
-- **RAM**: ~8,696 / 16,384 bytes (53.1%)
-- **Available**: ~928 bytes Flash
+- **Flash**: ~130,816 / 131,072 bytes (99.8%)
+- **RAM**: ~8,704 / 16,384 bytes (53.1%)
+- **Available**: ~256 bytes Flash
 - **Daily Report**: Disabled via `#define ENABLE_DAILY_REPORT`
 - **Note**: RAM 53.1% is static only; ~4 KB free at runtime (incl. stack/heap)
 - **Region system**: RegionMap (4 entries + wildcard) adds ~168 bytes RAM

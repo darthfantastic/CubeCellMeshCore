@@ -173,9 +173,9 @@ If a matching region has `REGION_DENY_FLOOD` set, return NULL (= block).
 ### Hardware Constraints
 
 The HTCC-AB01 (ASR6501) has severe resource limits:
-- **Flash:** 131 KB (currently 99.3% used — ~900 bytes free)
-- **RAM:** 16 KB (currently 52% used)
-- **EEPROM:** 512 bytes (limited space after NodeConfig + Identity)
+- **Flash:** 131 KB (currently 99.8% used — ~256 bytes free)
+- **RAM:** 16 KB (currently 53.1% used)
+- **EEPROM:** 576 bytes (extended from 512 for region persistence)
 - **Crypto:** `rweather/Crypto` library already included (SHA256, HMAC available)
 
 ### Feasibility Analysis
@@ -247,30 +247,35 @@ struct RegionMap {
 - Available via serial and remote CLI
 - **Cost:** ~744 bytes Flash (freed by optimizing debug output and CLI aliases)
 
-#### Phase 5: Testing
+#### Phase 5: EEPROM Persistence --- DONE
+- Extended EEPROM_SIZE from 512 to 576 bytes
+- Region data at offset 512: magic(2) + count(1) + wildcard_flags(1) + 4×(name[12]+flags)
+- Keys NOT saved in EEPROM — derived via SHA256(name) on load (saves 64 bytes)
+- `region save` — persist region map to EEPROM (admin only)
+- `region load` — load region map from EEPROM (admin only, also called at boot)
+- **Cost:** ~672 bytes Flash, +64 bytes EEPROM
+
+#### Phase 6: Testing (TODO)
 - Transport code serialization/deserialization
 - SHA256 key derivation from names
 - HMAC-SHA256 transport code computation
 - Region matching with deny/allow
+- EEPROM save/load round-trip
 - Backward compatibility with legacy FLOOD packets
+- Interoperability with MeshCore upstream
 
-### Flash Budget Estimate
+### Flash Budget
 
-| Component | Estimated Size |
-|-----------|---------------|
-| Transport code serialize/deserialize | ~100 bytes |
-| SHA256 key derivation | ~50 bytes (uses existing lib) |
-| HMAC-SHA256 transport code calc | ~100 bytes (uses existing lib) |
-| RegionMap + findMatch | ~400 bytes |
-| EEPROM load/save | ~200 bytes |
-| CLI commands (minimal) | ~600 bytes |
-| **Total** | **~1.5 KB** |
+| Component | Actual Size |
+|-----------|-------------|
+| Transport code serialize/deserialize (Phase 1) | +48 bytes Flash, +16 bytes RAM |
+| RegionMap + findMatch (Phase 2-3) | +272 bytes Flash, +168 bytes RAM |
+| CLI commands (Phase 4) | +744 bytes Flash |
+| EEPROM save/load (Phase 5) | +672 bytes Flash, +64 bytes EEPROM |
+| Flash freed by optimizing debug output and CLI aliases | -1,088 bytes |
+| **Net total** | **+648 bytes Flash, +184 bytes RAM, +64 bytes EEPROM** |
 
-After all phases, available Flash is ~928 bytes (99.3%). Actual costs:
-- Phase 1: DONE (+48 bytes Flash, +16 bytes RAM)
-- Phase 2-3: DONE (+272 bytes Flash, +168 bytes RAM)
-- Phase 4: DONE (+744 bytes Flash)
-- Flash freed by optimizing debug output and CLI aliases: ~1,088 bytes
+After all phases: Flash 99.8% (~256 bytes free), RAM 53.1%
 
 ---
 

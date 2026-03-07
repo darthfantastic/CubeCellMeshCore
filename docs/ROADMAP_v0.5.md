@@ -19,16 +19,17 @@
   - NeighbourTracker (50 entry): ~600 B
   - PacketLogger (32 entry): ~384 B
 
-### EEPROM (512 bytes totali)
+### EEPROM (576 bytes totali, esteso da 512)
 ```
 Offset  Dim   Contenuto
 ------  ----  ---------
-0       110   NodeConfig (password, alert, report dest)
+0       112   NodeConfig (password, alert, report dest)
 128     132   Identity (chiavi Ed25519, nome, location)
-280     60    PersistentStats (contatori lifetime)
-340     172   ** LIBERI **
+280     50    PersistentStats (contatori lifetime)
+340     172   Mailbox (header 8B + 2 slot x 82B)
+512     57    RegionMap (header 4B + 4 entry x 13B)
+569     7     ** LIBERI **
 ```
-- **Liberi**: 172 bytes - sufficienti per 2-3 messaggi piccoli o config aggiuntiva
 
 ---
 
@@ -533,6 +534,14 @@ Deny-based flood filtering allineato al protocollo MeshCore. Vedi `docs/REGION_S
 - Serial: `password admin <pw>` / `password guest <pw>`
 - Remote: `password <pw>` / `set guest.password <pw>` (invariato)
 
+**Fase 4.5: EEPROM Persistence**
+- EEPROM_SIZE esteso da 512 a 576 byte (+64 byte)
+- Region data a offset 512: magic(2) + count(1) + wildcard_flags(1) + 4×(name[12]+flags)
+- Chiavi SHA256 NON salvate — ricalcolate con `deriveKey()` al `load()` (risparmia 64 B EEPROM)
+- `region save` / `region load` — comandi CLI (admin only)
+- Auto-load al boot in `setup()`
+- Costo: +672 B Flash, +64 B EEPROM
+
 ### Ordine completato: Fase 0 -> 1 -> 2 -> 2.5 -> 3 -> 3.1 -> 3.2 -> 3.3 -> 3.4 -> 4
 
 ---
@@ -551,11 +560,11 @@ Deny-based flood filtering allineato al protocollo MeshCore. Vedi `docs/REGION_S
 | Fase 3.2 (DIRECT+Health) | ~+200 B | 0 | 0 | DIRECT routing, health dashboard |
 | Fase 3.3 (SNR Delay) | ~+50 B | 0 | 0 | Lookup table, RSSI threshold |
 | Fase 3.4 (QH+CB+ATX) | ~+1,200 B | +57 B | 0 | Quiet Hours, Circuit Breaker, Adaptive TX |
-| Fase 4 (Regions) | ~+1,064 B | +184 B | 0 | RegionMap, transport codes, CLI (-1,088 B ottimiz.) |
-| **Totale** | **~-6,818 B** | **-71 B** | **+172 B** | |
-| **Finale (misurato)** | **~130,144 B (99.3%)** | **~8,696 B (53.1%)** | **512/512** | |
+| Fase 4 (Regions) | ~+1,736 B | +184 B | 64 B | RegionMap, transport codes, CLI, EEPROM save/load (-1,088 B ottimiz.) |
+| **Totale** | **~-6,146 B** | **-71 B** | **+236 B** | |
+| **Finale (misurato)** | **~130,816 B (99.8%)** | **~8,704 B (53.1%)** | **576/576** | |
 
-**Margine residuo**: ~928 B Flash liberi, ~7,688 B RAM liberi
+**Margine residuo**: ~256 B Flash liberi, ~7,680 B RAM liberi
 
 ---
 
@@ -567,4 +576,4 @@ Deny-based flood filtering allineato al protocollo MeshCore. Vedi `docs/REGION_S
 - **Stabilita'**: zero regressioni sui 66 test firmware esistenti
 - **SNR Adaptive Delay**: DIRECT delay < FLOOD delay; SNR migliore = ritrasmissione piu' veloce; pacchetti sotto -120 dBm scartati
 - **Region Filtering**: deny-based flood filtering compatibile con MeshCore 1.10.0+
-- **Flash**: margine residuo ~928 B dopo tutte le feature
+- **Flash**: margine residuo ~256 B dopo tutte le feature

@@ -187,13 +187,14 @@ Key hardware constraints:
 Crypto functions (Ed25519, AES) allocate 128-256 byte local buffers on the stack.
 Deep call chains risk silent stack overflow.
 
-### EEPROM (emulated, 512 bytes)
-- Offset 0x00: NodeConfig (~112 bytes) - power, passwords, report/alert settings
-- Offset 0x80: Identity (~132 bytes) - Ed25519 keys, node name, location
-- Offset 0x118: PersistentStats (~48 bytes) - lifetime counters, CRC16
+### EEPROM (emulated, 576 bytes)
+- Offset 0x000: NodeConfig (~112 bytes) - power, passwords, report/alert settings
+- Offset 0x080: Identity (~132 bytes) - Ed25519 keys, node name, location
+- Offset 0x118: PersistentStats (~50 bytes) - lifetime counters, CRC16
+- Offset 0x154: Mailbox (172 bytes) - 2 persistent store-and-forward slots
+- Offset 0x200: RegionMap (57 bytes) - 4 region entries + wildcard flags
 
-Flash wear: auto-save every 5 min = ~288 writes/day = ~347 days at 100K cycles.
-For long-term deployments, increase `STATS_SAVE_INTERVAL_MS`.
+Flash wear: auto-save every 30 min = ~48 writes/day = ~5.7 years at 100K cycles.
 
 ## Build Configurations
 

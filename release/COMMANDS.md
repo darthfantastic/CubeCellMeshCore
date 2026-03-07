@@ -160,8 +160,10 @@ Deny-based flood filtering aligned with MeshCore 1.10.0+ protocol. Each region e
 | `region remove <name>` | Remove region entry (admin only) |
 | `region allowf <name>` | Allow flood forwarding for region or `*` (admin only) |
 | `region denyf <name>` | Deny flood forwarding for region or `*` (admin only) |
+| `region save` | Persist region map to EEPROM (admin only) |
+| `region load` | Load region map from EEPROM (admin only) |
 
-**Region names:** ISO 3166-1 alpha-2 codes (e.g., `nl`, `au`, `us`) or UNECE subdivision codes (e.g., `nl-li`, `au-nsw`). Max 15 characters. Use `*` for the wildcard (controls legacy FLOOD packets).
+**Region names:** ISO 3166-1 alpha-2 codes (e.g., `nl`, `au`, `us`) or UNECE subdivision codes (e.g., `nl-li`, `au-nsw`). Max 11 characters (12 in EEPROM). Use `*` for the wildcard (controls legacy FLOOD packets).
 
 **Example:**
 ```
@@ -169,6 +171,7 @@ region put it          # Add Italy region
 region put it-lom      # Add Lombardy sub-region
 region denyf au        # Block Australian flood traffic
 region allowf *        # Allow legacy flood packets
+region save            # Persist to EEPROM (survives reboot)
 ```
 
 **How it works:**
@@ -352,7 +355,7 @@ sleep on/off  rxboost on/off
 advert  advert local  ping  ping <hash>  trace <hash>
 alert on/off/dest/clear  mailbox clear
 quiet <start> <end>  quiet off
-region put/remove/allowf/denyf <name>
+region put/remove/allowf/denyf <name>  region save  region load
 ratelimit on/off/reset  clear stats  neighbor.remove <hex>
 report on/off/dest/time/test/nodes
 save  reset  reboot  clkreboot
