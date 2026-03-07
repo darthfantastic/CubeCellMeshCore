@@ -247,7 +247,7 @@
 //=============================================================================
 // EEPROM Configuration
 //=============================================================================
-#define EEPROM_SIZE         512     // NodeConfig(~150) + Identity(~132) need ~300 bytes minimum
+#define EEPROM_SIZE         576     // NodeConfig(112) + Identity(132) + Stats(50) + Mailbox(172) + Region(57)
 #define EEPROM_MAGIC        0xCC3C      // Magic number to validate config
 #define EEPROM_VERSION      6           // Config version (6 = removed invalid region/scope fields)
 

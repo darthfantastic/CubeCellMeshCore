@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <SHA256.h>
 #include "Packet.h"
 
@@ -7,6 +8,11 @@
 #define REGION_NAME_LEN       16
 #define REGION_KEY_LEN        16
 #define REGION_DENY_FLOOD     0x01
+
+// EEPROM persistence
+#define REGION_EEPROM_OFFSET  512
+#define REGION_EEPROM_MAGIC   0x5247    // "RG"
+#define REGION_SAVE_NAME_LEN  12        // Compact name in EEPROM (enough for "au-nsw" etc.)
 
 struct RegionEntry {
     char name[REGION_NAME_LEN];
@@ -134,5 +140,66 @@ public:
         _count = 0;
         memset(_entries, 0, sizeof(_entries));
         _wildcard.flags = 0;
+    }
+
+    // EEPROM persistence - compact format (no key cache, derived on load)
+    // Layout: magic(2) + count(1) + wc_flags(1) + entries[4]*(name[12]+flags(1)) = 57 bytes
+    bool save() {
+        uint16_t offset = REGION_EEPROM_OFFSET;
+        uint16_t magic = REGION_EEPROM_MAGIC;
+        EEPROM.put(offset, magic);          offset += 2;
+        EEPROM.put(offset, _count);         offset += 1;
+        EEPROM.put(offset, _wildcard.flags); offset += 1;
+        for (uint8_t i = 0; i < REGION_MAX_ENTRIES; i++) {
+            // Write compact name (12 bytes)
+            char compactName[REGION_SAVE_NAME_LEN];
+            memset(compactName, 0, REGION_SAVE_NAME_LEN);
+            if (i < _count) {
+                strncpy(compactName, _entries[i].name, REGION_SAVE_NAME_LEN - 1);
+            }
+            for (uint8_t j = 0; j < REGION_SAVE_NAME_LEN; j++) {
+                EEPROM.write(offset + j, compactName[j]);
+            }
+            offset += REGION_SAVE_NAME_LEN;
+            EEPROM.write(offset, (i < _count) ? _entries[i].flags : 0);
+            offset += 1;
+        }
+        return EEPROM.commit();
+    }
+
+    bool load() {
+        uint16_t offset = REGION_EEPROM_OFFSET;
+        uint16_t magic;
+        EEPROM.get(offset, magic);          offset += 2;
+        if (magic != REGION_EEPROM_MAGIC) return false;
+
+        uint8_t count;
+        EEPROM.get(offset, count);          offset += 1;
+        uint8_t wcFlags;
+        EEPROM.get(offset, wcFlags);        offset += 1;
+
+        if (count > REGION_MAX_ENTRIES) return false;
+
+        _wildcard.flags = wcFlags;
+        _count = 0;
+
+        for (uint8_t i = 0; i < REGION_MAX_ENTRIES; i++) {
+            char compactName[REGION_SAVE_NAME_LEN];
+            for (uint8_t j = 0; j < REGION_SAVE_NAME_LEN; j++) {
+                compactName[j] = EEPROM.read(offset + j);
+            }
+            offset += REGION_SAVE_NAME_LEN;
+            uint8_t flags = EEPROM.read(offset);
+            offset += 1;
+
+            if (i < count && compactName[0] != '\0') {
+                strncpy(_entries[_count].name, compactName, REGION_NAME_LEN - 1);
+                _entries[_count].name[REGION_NAME_LEN - 1] = '\0';
+                _entries[_count].flags = flags;
+                deriveKey(_entries[_count].name, _entries[_count].key);
+                _count++;
+            }
+        }
+        return true;
     }
 };

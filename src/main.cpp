@@ -810,6 +810,12 @@ static bool dispatchSharedCommand(const char* cmd, CmdCtx& ctx, bool isAdmin) {
     else if (isAdmin && strncmp(cmd, "region denyf ", 13) == 0) {
         CP(regionMap.denyFlood(cmd + 13) ? "OK\n" : "ERR\n");
     }
+    else if (isAdmin && strcmp(cmd, "region save") == 0) {
+        CP(regionMap.save() ? "OK\n" : "ERR\n");
+    }
+    else if (isAdmin && strcmp(cmd, "region load") == 0) {
+        CP(regionMap.load() ? "OK\n" : "ERR\n");
+    }
     else {
         return false;  // command not handled
     }
@@ -3251,6 +3257,9 @@ void setup() {
 
     // Initialize contact manager for direct messaging
     contactMgr.begin(&nodeIdentity);
+
+    // Load region map from EEPROM
+    regionMap.load();
 
     initLed();
     packetCache.clear();
